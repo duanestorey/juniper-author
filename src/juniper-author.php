@@ -27,6 +27,7 @@ class JuniperAuthor extends GithubUpdater {
         // Plugin action links
         add_filter( 'plugin_action_links_' . plugin_basename( JUNIPER_AUTHOR_MAIN_FILE ), array( $this, 'add_action_links' ) );
         add_filter( 'admin_init', array( $this, 'loadAssets' ) );
+        add_filter( 'admin_init', array( $this, 'handleRepoLinks' ) );
 
         // initialize the updater
         parent::__construct( 
@@ -45,8 +46,25 @@ class JuniperAuthor extends GithubUpdater {
         if ( !empty( $_GET[ 'page' ] ) ) {
             $currentPage = $_GET[ 'page' ];
 
-            if ( $currentPage == 'juniper-options' ) {
+            if ( $currentPage == 'juniper-options' || $currentPage == 'juniper-repos' ) {
                 wp_enqueue_style( 'juniper-author', plugins_url( 'dist/juniper.css', JUNIPER_AUTHOR_MAIN_FILE ), false );
+            }
+        }
+    }
+
+    public function handleRepoLinks() {
+        if ( !empty( $_GET[ 'juniper_nonce' ] ) ) {
+            $nonce = $_GET[ 'juniper_nonce' ];
+
+            if ( !empty( $_GET[ 'juniper_remove_repo' ] ) ) {
+                if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
+                    $repos = $this->settings->getSetting( 'repositories' );
+                    if ( $repos && isset( $repos[ $_GET[ 'juniper_remove_repo' ] ] ) ) {
+                        unset( $repos[ $_GET[ 'juniper_remove_repo' ] ] );
+                        $this->settings->setSetting( 'repositories', $repos );
+                        $this->settings->saveSettings();
+                    }
+                }
             }
         }
     }

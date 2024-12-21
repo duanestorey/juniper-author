@@ -32,6 +32,16 @@ class Settings {
 
             $this->processSubmittedSettings();
 
+             $this->settingsPages[ 'repos' ] = [];
+             $this->addSettingsSection( 
+                $this->settingsPages[ 'repos' ],
+                'Add New', 
+                __( 'Add New Repository', 'juniper' ),
+                array(
+                        $this->addSetting( 'text', 'new_repo_name', __( 'Enter Github Repository URL', 'juniper' ) ),
+                )
+            );
+
             $this->settingsPages[ 'options' ] = [];
             $this->addSettingsSection( 
                 $this->settingsPages[ 'options' ],
@@ -84,6 +94,11 @@ class Settings {
                     $this->settings->public_key = null;
                     $this->settings->reset_key = false;
                     $this->saveSettings();
+                } else if ( !empty( $this->settings->new_repo_name ) ) {
+                    $this->mayebAddRepo( $this->settings->new_repo_name );
+
+                    $this->settings->new_repo_name = false;
+                    $this->saveSettings();
                 } else {
                     $this->saveSettings();
                 } 
@@ -118,6 +133,58 @@ class Settings {
                     }               
                 }
             }
+        }
+    }
+
+    protected function getRepoInfo( $repoUrl ) {
+        if ( strpos( $repoUrl, 'https://github.com') !== false ) {
+            // github URL
+            $phpFile = basename( $repoUrl ) . '.php';
+
+            $parsed = parse_url( $repoUrl );
+            $path = str_replace( '.git', '', $parsed[ 'path' ] );
+            $url = 'https://raw.githubusercontent.com/' . $path . '/refs/heads/main/' . $phpFile;
+
+            $contents = file_get_contents( $url );
+            if ( $contents ) {
+                $headers = [];
+                if ( preg_match_all( '/(.*): (.*)/', $contents, $matches ) ) {
+                    foreach( $matches[ 1 ] as $key => $value ) {
+                        $headers[ strtolower( trim( $value ) ) ] = trim( $matches[ 2 ][ $key ] );
+                    }
+                    
+                    $repoInfo = new \stdClass;
+                    $repoInfo->type = 'plugin';
+
+                    $mapping = array(
+                        'plugin name' => 'pluginName',
+                        'stable' => 'stable',
+                        'description' => 'description',
+                        'author' => 'author',
+                        'requires php' => 'requiresPHP',
+                        'requires at least' => 'requiresAtLeast',
+                        'tested up to' => 'testedUpTo'
+                    );
+
+                    foreach( $mapping as $key => $value ) {
+                        if ( isset( $headers[ $key ] ) ) {
+                            $repoInfo->$value = $headers[ $key ];
+                        }
+                    } 
+
+                    return $repoInfo;
+                }
+            }
+        }
+
+        return false;
+    }   
+
+    protected function mayebAddRepo( $repoUrl ) {
+        $repoInfo = $this->getRepoInfo( $repoUrl );
+
+        if ( $repoInfo ) {
+                $this->settings->repositories[ $repoUrl ] = $repoInfo;
         }
     }
 
@@ -173,7 +240,7 @@ class Settings {
     }
 
     public function renderOneSetting( $setting ) {
-        echo '<div class="setting">';
+        echo '<div class="setting ' . $setting->type . '">';
         switch( $setting->type ) {
             case 'checkbox':
                 $checked = ( $this->getSetting( $setting->name ) ? ' checked' : '' );
@@ -189,6 +256,11 @@ class Settings {
                 echo '<textarea rows="10" name="wpsetting_' . esc_attr( $setting->name ) . '" readonly>';
                 echo esc_html( $currentSetting );
                 echo '</textarea>';
+                break;
+            case 'text':
+                $currentSetting = $this->getSetting( $setting->name );
+                echo '<input type="text" name="wpsetting_' . esc_attr( $setting->name ) . '" value="' . esc_attr( $currentSetting ) . '" />';
+                echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '">' . esc_html( $setting->desc ) . '</label><br/>';
                 break;
             case 'select':
                 echo '<select name="wpsetting_'. esc_attr( $setting->name ) . '">';
@@ -215,6 +287,9 @@ class Settings {
         $settings->public_key = '';
 
         $settings->reset_key = false;
+        $settings->new_repo_name = false;
+
+        $settings->repositories = [];
 
         return $settings;
     }
@@ -224,7 +299,7 @@ class Settings {
     }
 
     public function renderReposPage() {
-        require_once( JUNIPER_AUTHOR_MAIN_DIR . '/templates/repos-page.php' );
+        require_once( JUNIPER_AUTHOR_MAIN_DIR . '/templates/repos.php' );
     }
 
     public function renderOptionsPage() {

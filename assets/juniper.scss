@@ -3,7 +3,28 @@
         width: 600px;
     }
 
+    .repo-table {
+        width: 100%;
+
+        thead {
+            th {
+                text-align: left;
+            }
+        }
+    }
+
+     .text {
+        input {
+            width: 50%;
+        }
+
+        label {
+            padding-left: 10px;
+        }    
+    }   
+
     .setting {
+            
         margin-bottom: 15px;
 
         label {
