@@ -169,7 +169,7 @@ class GitHubUpdater {
         $headerData = $this->getHeaderInfo();
         $releaseInfo = $this->getReleaseInfo();
 
-        if ( $headerData && $releaseInfo ) {
+        if ( $headerData && $releaseInfo && isset( $headerData[ 'stabe' ] ) ) {
             $latestVersion = $headerData[ 'stable' ];
 
             if ( $latestVersion ) {

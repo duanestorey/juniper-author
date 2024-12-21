@@ -16,6 +16,7 @@ class Settings {
     // The WordPress settings key
     public const SETTING_KEY = "juniper_author_settings";
     public const UPDATED_KEY = "juniper_author_settings_updated";
+    public const ERROR_KEY = "juniper_author_last_error";
 
     protected $settings = null;
     protected $settingsPages = [];
@@ -82,6 +83,26 @@ class Settings {
                 } else {
                     $this->saveSettings();
                 } 
+            }
+        } else if ( isset( $_POST[ 'juniper_author_gen_keypair' ] ) ) {
+            $nonce = $_POST[ 'juniper_author_nonce' ];
+            if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
+                if ( $_POST[ 'juniper_private_pw_1' ] == $_POST[ 'juniper_private_pw_2' ] ) {
+                    $config =   array(
+                        "private_key_bits" => 2048,
+                        "private_key_type" => OPENSSL_KEYTYPE_RSA,
+                    );
+
+                    $key = openssl_pkey_new( $config ) ;
+                    if ( $key ) {
+                        $details = openssl_pkey_get_details( $key) ;
+
+                        openssl_pkey_export( $key, $str, $_POST[ 'juniper_private_pw_1' ] );
+
+                        $this->settings->private_key = $str;
+                        $this->saveSettings();
+                    }               
+                }
             }
         }
     }
@@ -219,5 +240,6 @@ class Settings {
     static function deleteAllOptions() {
         delete_option( NOTWPORG\Juniper\Settings::SETTING_KEY );
         delete_option( NOTWPORG\Juniper\Settings::UPDATED_KEY );
+        delete_option( NOTWPORG\Juniper\Settings::ERROR_KEY );   
     }
 }

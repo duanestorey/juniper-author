@@ -32,8 +32,8 @@
             <input type="submit" id="submit" class="button button-primary" name="submit" value="<?php esc_attr_e( 'Save Changes', 'juniper' ); ?>" />
         </form> 
     <?php } else { ?>
-        <form method="post" action="options-general.php?page=api-privacy"> 
-            <input type="hidden" name="juniper_author" value="1">
+        <form method="post" action="admin.php?page=juniper-options"> 
+            <input type="hidden" name="juniper_author_gen_keypair" value="1">
             <input type="hidden" name="juniper_author_nonce" value="<?php echo wp_create_nonce( 'juniper' ); ?>">
             <table class="form-table" role="presentation">
                 <tbody>
