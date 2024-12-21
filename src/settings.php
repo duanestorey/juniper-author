@@ -8,6 +8,7 @@
 namespace NOTWPORG\JuniperAuthor;
 
 use phpseclib3\Crypt\EC;
+use phpseclib3\Crypt\RSA;
 
 // Prevent direct access
 if ( ! defined( 'WPINC' ) ) {
@@ -160,6 +161,7 @@ class Settings {
                 if ( $_POST[ 'juniper_private_pw_1' ] == $_POST[ 'juniper_private_pw_2' ] ) {
                     require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
 
+                    //$private = RSA::createKey()->withPassword( $_POST[ 'juniper_private_pw_1' ] );
                     $private = EC::createKey('Ed25519')->withPassword( $_POST[ 'juniper_private_pw_1' ] );
                     $public = $private->getPublicKey();
 
@@ -168,38 +170,6 @@ class Settings {
                     $this->settings->public_key = $private->getPublicKey()->toString( 'PKCS8' );;
 
                     $this->saveSettings();
-                    /*
-
-                    $curves = openssl_get_curve_names();
-                    if ( in_array( 'secp256k1', $curves ) ) {
-                        $config = array(
-                            "curve" => 'secp256k1',
-                            "private_key_type" => OPENSSL_KEYTYPE_RSA,
-                        );
-
-                        $this->settings->key_type = 'secp256k1';
-                    } else {
-                        $config = array(
-                            "private_key_bits" => 2048,
-                            "private_key_type" => OPENSSL_KEYTYPE_RSA,
-                        );
-
-                        $this->settings->key_type = 'rsa2048';
-                    }
-
-
-                    $key = openssl_pkey_new( $config ) ;
-                    if ( $key ) {
-                        $details = openssl_pkey_get_details( $key ) ;
-
-                        openssl_pkey_export( $key, $str, $_POST[ 'juniper_private_pw_1' ], $config );
-
-                        $this->settings->private_key = $str;
-                        $this->settings->public_key = $details[ 'key' ];
-
-                        $this->saveSettings();
-                    }               
-                    */
                 }
             }
         }

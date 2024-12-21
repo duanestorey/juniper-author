@@ -65,6 +65,7 @@ class JuniperAuthor extends GithubUpdater {
             require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
 
             $private_key = PublicKeyLoader::loadPrivateKey( $this->settings->getSetting( 'private_key' ), $passPhrase );
+            $private_key->withSignatureFormat( 'IEEE' );
 
             $current_user = wp_get_current_user();
 
@@ -99,10 +100,10 @@ class JuniperAuthor extends GithubUpdater {
                                     }
 
 
-                                    $hashBin = hash_file( 'SHA512', $destinationZipFile, true );
+                                    $hashBin = hash_file( 'SHA256', $destinationZipFile, true );
                                     
                                     $sig[ 'hash' ] = base64_encode( $hashBin );
-                                    $sig[ 'hash_type' ] = 'SHA512';
+                                    $sig[ 'hash_type' ] = 'SHA256';
                                     $sig[ 'signature' ] = base64_encode( $private_key->sign( $hashBin ) );
                                 
                                     file_put_contents( $sigFile, json_encode( $sig ) );         
