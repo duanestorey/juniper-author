@@ -4,6 +4,23 @@
 .juniper .red {
   color: red;
 }
+.juniper .green {
+  color: green;
+}
+.juniper .progress {
+  display: none;
+  height: 30px;
+  border: 1px solid #ddd;
+  margin: 20px 0px;
+}
+.juniper .progress .bar {
+  width: 20%;
+  background-color: #2271b1;
+  height: 100%;
+  line-height: 30px;
+  text-align: center;
+  color: white;
+}
 .juniper .repo-table {
   width: 100%;
 }

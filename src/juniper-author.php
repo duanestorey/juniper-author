@@ -7,6 +7,8 @@
 
 namespace NOTWPORG\JuniperAuthor;
 
+use phpseclib3\Crypt\PublicKeyLoader;
+
 // Prevent direct access
 if ( ! defined( 'WPINC' ) ) {
     die;
@@ -30,6 +32,8 @@ class JuniperAuthor extends GithubUpdater {
         add_filter( 'admin_init', array( $this, 'handleRepoLinks' ) );
         add_action( 'rest_api_init', array( $this, 'setupRestApi' ) );
         add_action( 'shutdown', array( $this, 'lookForReleases' ) );
+        add_action( 'wp_ajax_handle_ajax', array( $this, 'handleAjax' ) );
+        add_action( 'wp_ajax_nopriv_handle_ajax', array( $this, 'handleAjax' ) );
 
         // initialize the updater
         parent::__construct( 
@@ -44,30 +48,103 @@ class JuniperAuthor extends GithubUpdater {
         $this->settings->init();
     }
 
-    public function signReleases( $passphrase = false) {             
-        // process zips
-        $releases = $this->settings->getSetting( 'releases' );
+    protected function signRepoPackage( $repo, $tagName, $passPhrase ) {
+        try {
+            require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
 
-        @mkdir( JUNIPER_AUTHOR_RELEASES_PATH, 0755 );
+            $private_key = PublicKeyLoader::loadPrivateKey( $this->settings->getSetting( 'private_key' ), $passPhrase );
 
-        foreach( $releases as $repo => $releaseInfo ) {
-            foreach( $releaseInfo as $actualRelease ) {
-                $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $actualRelease->tag_name	;
+            $current_user = wp_get_current_user();
 
-                if ( !file_exists( $releasePath ) ) {
-                    @mkdir( $releasePath, 0755, true );
-                };
+            @mkdir( JUNIPER_AUTHOR_RELEASES_PATH, 0755 );
 
-                if ( !empty( $actualRelease->assets[0]->name ) ) {
-                    $zipName = $actualRelease->assets[0]->name;
-                    $destinationZipFile = $releasePath . '/' . $zipName;
+            $releases = $this->settings->getSetting( 'releases' );
+            if ( !empty( $releases[ $repo ] ) ) {
+                foreach( $releases[ $repo ] as $num => $releaseInfo ) {
+                    if ( $releaseInfo->tag_name == $tagName ) {
+                        $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $releaseInfo->tag_name	;
 
-                    if ( !file_exists( $destinationZipFile ) ) {
-                        copy( $actualRelease->assets[0]->browser_download_url, $destinationZipFile ); 
+                        if ( !file_exists( $releasePath ) ) {
+                            @mkdir( $releasePath, 0755, true );
+
+                            if ( !empty( $releaseInfo->assets[0]->name ) ) {
+                                $zipName = $releaseInfo->assets[0]->name;
+                                $destinationZipFile = $releasePath . '/' . $zipName;
+
+                                if ( !file_exists( $destinationZipFile ) ) {
+                                    copy( $releaseInfo->assets[0]->browser_download_url, $destinationZipFile ); 
+
+                                    $destinationSignedZipFile = str_replace( '.zip', '.signed.zip', $destinationZipFile );
+
+                                    $zip = new \ZipArchive();
+
+                                    $sigFile = tempnam( sys_get_temp_dir(), 'juniper-' );
+                                
+                                    $sig = array();
+
+                                    if ( $current_user->display_name ) {
+                                        $sig[ 'author' ] = $current_user->display_name;
+                                    }
+                                    
+                                    $sig[ 'hash' ] = hash_file( 'SHA512', $destinationZipFile );
+                                    $sig[ 'hash_type' ] = 'SHA512';
+                                    $sig[ 'signature' ] = $private_key->sign( $sig[ 'hash' ] );
+                                
+                                    file_put_contents( $sigFile, json_encode( $sig ) );         
+
+                                    if ( $zip->open( $destinationSignedZipFile, \ZipArchive::OVERWRITE | \ZipArchive::CREATE ) === TRUE ) {
+                                        $zip->addFile( $sigFile, 'signature.json' );
+                                        $zip->addFile( $destinationZipFile, $zipName );
+                                        $zip->setArchiveComment( json_encode( $sig ) );
+
+                                        $zip->close();
+                                    }
+
+                                    rename( $destinationZipFile, str_replace( '.zip', '.bak.zip', $destinationZipFile ) );
+
+                                    return basename( $destinationSignedZipFile );
+                                }
+                            }
+                        };
+
+                        break;
                     }
                 }
             }
-        }     
+        } catch ( \phpseclib3\Exception $e ) {
+        
+        }
+        
+    }
+
+    public function handleAjax() {
+        $action = $_POST[ 'juniper_action' ];
+        $nonce = $_POST[ 'juniper_nonce' ];
+
+        $response = new \stdClass;
+        $response->success = 0;
+
+        if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
+            switch( $action ) {
+                case 'sign_release':
+                    
+                    $response->data = $_POST;
+                    $repo = $_POST[ 'repo' ];
+                    $tag = $_POST[ 'tag' ];
+                    $passPhrase = $_POST[ 'pw' ];
+
+                    $response->package = $this->signRepoPackage( $repo, $tag, $passPhrase );
+
+                    $response->signed = true;
+                    $response->signed_text = __( 'Yes', 'juniper' );
+                    
+                    break;
+            }
+        }
+
+        echo json_encode( $response );
+
+        wp_die();
     }
 
     public function lookForReleases() {
@@ -83,7 +160,7 @@ class JuniperAuthor extends GithubUpdater {
 
                     $info = $this->getReleaseInfo( $repoUrl );
 
-                    if ( $info ) {
+                    if ( $info) {
                         $hadReleases = true;
 
                         $releases[ $url ] = $info;
@@ -99,8 +176,6 @@ class JuniperAuthor extends GithubUpdater {
             $this->settings->setSetting( 'next_release_time', time() + 15*60 );
             $this->settings->saveSettings();
         }
-
-        $this->signReleases();   
     }
 
     public function outputPublicKey( $data ) {
@@ -137,6 +212,14 @@ class JuniperAuthor extends GithubUpdater {
 
             if ( $currentPage == 'juniper-options' || $currentPage == 'juniper-repos' || $currentPage == 'juniper' ) {
                 wp_enqueue_style( 'juniper-author', plugins_url( 'dist/juniper.css', JUNIPER_AUTHOR_MAIN_FILE ), false );
+                wp_enqueue_script( 'juniper-author', plugins_url( 'dist/juniper.js', JUNIPER_AUTHOR_MAIN_FILE ), array( 'jquery' ) );
+
+                $data = array(
+                    'ajax_url' => admin_url( 'admin-ajax.php' ),
+                    'nonce' => wp_create_nonce( 'juniper' )
+                );
+
+                wp_localize_script( 'juniper-author','Juniper', $data );
             }
         }
     }

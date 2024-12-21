@@ -38,8 +38,10 @@ class GitHubUpdater {
                 // Take this out for now, need to think about API considerations
                 $this->deleteTransients();
             }
+
+            add_action( 'admin_init', array( $this, 'checkForUpdate' ) );
         
-            $this->checkForUpdate();
+          //  $this->checkForUpdate();
 
             add_filter( 'plugins_api', [ $this, 'handlePluginInfo' ], 20, 3 );
             add_filter( 'site_transient_update_plugins', [ $this, 'handleUpdate' ] );
@@ -131,7 +133,7 @@ class GitHubUpdater {
         $this->cacheModifier = md5( $this->pluginSlug );
 
         $this->tagCacheKey = 'wp_juniper_' . $this->cacheModifier;
-        $this->headerCacheKey = 'wp_juniper_' . $this->cacheModifier;
+        $this->headerCacheKey = 'wp_juniper_tag_' . $this->cacheModifier;
     }
 
     private function setupGithubUrls() {
@@ -165,7 +167,7 @@ class GitHubUpdater {
         return $data;
     }
 
-    private function checkForUpdate() {
+    public function checkForUpdate() {
         $headerData = $this->getHeaderInfo();
         $releaseInfo = $this->_getReleaseInfo();
 
@@ -217,19 +219,20 @@ class GitHubUpdater {
 
     public function getReleaseInfo( $releaseUrl ) {
         $cache_key = 'wp_juniper_releases_' . md5( $releaseUrl );
+        //delete_transient( $cache_key );
         // Use the Github API to obtain release information
         $githubTagData = get_transient( $cache_key );
-        if ( !$githubTagData ) {
+        if ( $githubTagData === false ) {
+         
             $result = wp_remote_get( $releaseUrl );
             if ( !is_wp_error( $result ) ) {
                 $githubTagData = json_decode( wp_remote_retrieve_body( $result ) );
                
-                if ( $githubTagData ) {
-
+                if ( $githubTagData !== false ) {
                     set_transient( $cache_key, $githubTagData, GitHubUpdater::CACHE_TIME );
                 }
-            } 
-        }
+            }
+        } 
 
         return $githubTagData;
     }
@@ -239,7 +242,7 @@ class GitHubUpdater {
         $headerData = get_transient( $this->headerCacheKey );
         if ( !$headerData ) {
             $result = wp_remote_get( $this->gibhubMainPhp );
-            if( $result ) {
+            if ( $result ) {
                 if ( !is_wp_error( $result ) ) {
                     $body = wp_remote_retrieve_body( $result );
                     if ( $body ) {
@@ -252,12 +255,12 @@ class GitHubUpdater {
 
                             $headerData = $headers;
                         }
-
+                        
                         set_transient( $this->headerCacheKey, $headerData, GitHubUpdater::CACHE_TIME );
                         delete_transient( $this->tagCacheKey );
                     }
                 }
-            }      
+            }    
         }
 
         return $headerData;
