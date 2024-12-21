@@ -8,8 +8,8 @@
     <?php $this->doOptionsHeader(); ?>
 
     <form method="post" action="options-general.php?page=api-privacy"> 
-        <input type="hidden" name="wp_api_privacy_settings" value="1">
-        <input type="hidden" name="wp_api_privacy_nonce" value="<?php echo wp_create_nonce( 'wpprivacy' ); ?>">
+        <input type="hidden" name="juniper_author" value="1">
+        <input type="hidden" name="juniper_author_nonce" value="<?php echo wp_create_nonce( 'juniper' ); ?>">
         <table class="form-table" role="presentation">
             <tbody>
                 <?php foreach( $this->settingsSections as $name => $data ) { ?>
@@ -26,6 +26,6 @@
                 <?php }?> 
             </tbody>
         </table>
-        <input type="submit" id="submit" class="button button-primary" name="submit" value="<?php esc_attr_e( 'Save Changes', 'wp-api-privacy' ); ?>" />
+        <input type="submit" id="submit" class="button button-primary" name="submit" value="<?php esc_attr_e( 'Save Changes', 'juniper' ); ?>" />
     </form>
 </div>

@@ -1,0 +1,54 @@
+# Copyright (C) 2024 Duane Storey
+# This file is distributed under the same license as the Juniper/Author plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Juniper/Author 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/juniper-author\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2024-12-21T03:30:30+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.11.0\n"
+"X-Domain: juniper\n"
+
+#. Plugin Name of the plugin
+#: juniper-author.php
+#: templates/options-page.php:2
+msgid "Juniper/Author"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: juniper-author.php
+msgid "https://github.com/nowporg/juniper-author"
+msgstr ""
+
+#. Description of the plugin
+#: juniper-author.php
+msgid "Facilitates code signing and releases for WordPress add-ons using the Juniper release system for WordPress"
+msgstr ""
+
+#. Author of the plugin
+#: juniper-author.php
+msgid "Duane Storey"
+msgstr ""
+
+#. Author URI of the plugin
+#: juniper-author.php
+msgid "https://duanestorey.com"
+msgstr ""
+
+#: src/settings.php:165
+#: src/settings.php:166
+msgid "Juniper"
+msgstr ""
+
+#: templates/options-page.php:5
+msgid "You can configure the options for Juniper/Author here."
+msgstr ""
+
+#: templates/options-page.php:29
+msgid "Save Changes"
+msgstr ""
