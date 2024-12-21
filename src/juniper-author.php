@@ -103,9 +103,15 @@ class JuniperAuthor extends GithubUpdater {
 
                                     $hashBin = hash_file( 'SHA256', $destinationZipFile, true );
                                     
+                                    $sig[ 'ver' ] = '1.0';
                                     $sig[ 'hash' ] = base64_encode( $hashBin );
                                     $sig[ 'hash_type' ] = 'SHA256';
                                     $sig[ 'signature' ] = base64_encode( $private_key->sign( $hashBin ) );
+
+                                    ksort( $sig );
+
+                                    // Sign the entire package with the private key so we can make sure the variables haven't been tampered with
+                                    $sig[ 'auth' ] = base64_encode( $private_key->sign( hash( 'sha256', json_encode( $sig ), true ) ) );
                                     //$sig[ 'package_url' ] =  plugins_url( basename( $repo ) . '/' . $releaseInfo->tag_name . '/' . str_replace( basename( $release->zipName ), JUNIPER_AUTHOR_MAIN_FILE );
                                 
                                     file_put_contents( $sigFile, json_encode( $sig ) );         
@@ -135,6 +141,47 @@ class JuniperAuthor extends GithubUpdater {
         
     }
 
+    public function verifyPackage( $package ) {
+        $verifyResult = new \stdClass;
+        $verifyResult->signature_valid = '0';
+        $verifyResult->file_valid = '0';
+        $verifyResult->package = str_replace( JUNIPER_AUTHOR_RELEASES_PATH, '', $package );
+
+        require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
+
+        $public_key = PublicKeyLoader::loadPublicKey( $this->settings->getSetting( 'public_key' ) );
+        $zip = new \ZipArchive();
+        $result = $zip->open( $package, \ZipArchive::RDONLY );
+        if ( $result === TRUE ) {
+            $comment = $zip->getArchiveComment();
+        
+            if ( $comment ) {
+                $comment = json_decode( $comment );
+
+                $sigBin = base64_decode( $comment->signature );
+                $hashBin = base64_decode( $comment->hash );
+            }
+
+            $result = $public_key->verify( $hashBin, $sigBin );
+            if ( $result ) { 
+                $verifyResult->signature_valid = '1';
+
+                $tempDir = sys_get_temp_dir() . '/' . md5( time() );
+
+                $zip->extractTo( $tempDir );
+                $originalName = $tempDir . '/' . str_replace( '.signed.zip', '.zip', basename( $package ) );
+                $verifyResult->local_file_hash = base64_encode( hash_file( 'SHA256', $originalName, true ) );
+                $verifyResult->local_file_path = $originalName;
+
+                $verifyResult->file_valid = ( $verifyResult->local_file_hash == $comment->hash ) ? '1' : '0';
+            }
+
+            $zip->close();
+        }
+        
+        return $verifyResult; 
+    }
+
     public function handleAjax() {
         $action = $_POST[ 'juniper_action' ];
         $nonce = $_POST[ 'juniper_nonce' ];
@@ -159,6 +206,10 @@ class JuniperAuthor extends GithubUpdater {
                     $passPhrase = $_POST[ 'pw' ];
 
                     $response->key_valid = $this->testPrivateKey( $passPhrase );
+                    break;
+                case 'verify_package':
+                    $package = $_POST[ 'package' ];
+                    $response->verify = $this->verifyPackage( $package );
                     break;
             }
         }
@@ -313,8 +364,10 @@ class JuniperAuthor extends GithubUpdater {
                 $result = $zip->open( $package, \ZipArchive::RDONLY );
                 if ( $result === TRUE ) {
                     $comment = $zip->getArchiveComment();
+                
                     if ( $comment ) {
                         $comment = json_decode( $comment );
+                            print_r( $comment );
                        //    $comment->signature[0] = 'B';
                         $sigBin = base64_decode( $comment->signature );
                         $hashBin = base64_decode( $comment->hash );
@@ -322,6 +375,7 @@ class JuniperAuthor extends GithubUpdater {
                     $result = $public_key->verify( $hashBin, $sigBin );
                     echo (int)$result . '<br/>';
                     echo $comment->hash . '<br/>' . $comment->signature;
+
                 }
                 
                 die;   

@@ -7,9 +7,9 @@
 
     <?php $repoInfo = $this->getSetting( 'repositories' ); ?>
 
-    <h2><?php _e( 'Sign Archives', 'juniper' ); ?></h2>
+    <h2><?php _e( 'Sign Packages', 'juniper' ); ?></h2>
 
-     <p><?php _e( 'To digitally sign the archives below, enter the passphrase for your private key and click Sign', 'juniper' ); ?></p>
+     <p><?php _e( 'To digitally sign the packages below, enter the passphrase for your private key and click Sign', 'juniper' ); ?></p>
 
     <form class="sign-form" method="post" action=""> 
         <input type="hidden" name="juniper_author_nonce" value="<?php echo wp_create_nonce( 'juniper' ); ?>">
@@ -53,7 +53,7 @@
                         <td class="yesno"><span class="red"><?php _e( 'No', 'juniper' ); ?></span></td>
                     <?php } ?>
 
-                    <td> <a href="<?php echo admin_url( 'admin.php?page=juniper&juniper_nonce=' . wp_create_nonce( 'juniper' ) . '&juniper_verify_package=' . $actualRelease->package ); ?>"><?php _e( 'Verify', 'juniper' ); ?></td>
+                    <td> <a class="verify" href="#" data-package="<?php echo esc_attr( $actualRelease->package ); ?>"><?php _e( 'Verify', 'juniper' ); ?></td>
                 </tr>
             <?php } ?>
             </tbody>
