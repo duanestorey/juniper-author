@@ -92,16 +92,24 @@ class Settings {
             $nonce = $_POST[ 'juniper_author_nonce' ];
             if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
                 if ( $_POST[ 'juniper_private_pw_1' ] == $_POST[ 'juniper_private_pw_2' ] ) {
-                    $config =   array(
-                        "private_key_bits" => 2048,
-                        "private_key_type" => OPENSSL_KEYTYPE_RSA,
-                    );
+                    $curves = openssl_get_curve_names();
+                    if ( in_array( 'secp256k1', $curves ) ) {
+                        $config = array(
+                            "curve" => 'secp256k1',
+                            "private_key_type" => OPENSSL_KEYTYPE_RSA,
+                        );
+                    } else {
+                        $config = array(
+                            "private_key_bits" => 2048,
+                            "private_key_type" => OPENSSL_KEYTYPE_RSA,
+                        );
+                    }
 
                     $key = openssl_pkey_new( $config ) ;
                     if ( $key ) {
                         $details = openssl_pkey_get_details( $key ) ;
 
-                        openssl_pkey_export( $key, $str, $_POST[ 'juniper_private_pw_1' ] );
+                        openssl_pkey_export( $key, $str, $_POST[ 'juniper_private_pw_1' ], $config );
 
                         $this->settings->private_key = $str;
                         $this->settings->public_key = $details[ 'key' ];

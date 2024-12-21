@@ -8,7 +8,7 @@
                 print_r( $curves );
 
                   $config = array(
-                        "curve_name" => 'brainpoolP224r1',
+                        "curve_name" => 'secp256k1',
                         "private_key_type" => OPENSSL_KEYTYPE_RSA,
                 );
 
