@@ -1,5 +1,5 @@
 <div class="wrap">
-    <h1><?php esc_html_e( 'Juniper/Author', 'juniper' ); ?></h1>
+    <h1><?php esc_html_e( 'Author/Options', 'juniper' ); ?></h1>
 
     <p>
         <?php esc_html_e( 'You can configure the options for Juniper/Author here.', 'juniper' ); ?><br />

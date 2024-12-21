@@ -29,6 +29,15 @@ class Settings {
             add_action( 'admin_menu', array( $this, 'setupSettingsPage' ) );
 
             $this->processSubmittedSettings();
+
+            $this->addSettingsSection( 
+                'debug', 
+                __( 'Debug', 'juniper' ),
+                array(
+                        $this->addSetting( 'checkbox', 'disable_https', __( 'Disable HTTPs for packet sniffing (should only be used for testing)', 'wp-api-privacy' ) ),
+                        $this->addSetting( 'checkbox', 'reset_settings', __( 'Reset settings to default state (this is destructive, use with care)', 'wp-api-privacy' ) ),
+                )
+            );
         }
     }
 
@@ -156,22 +165,48 @@ class Settings {
         return $settings;
     }
 
-    public function renderSettingsPage() {
-        require_once( PRIVACY_PATH . '/templates/options-page.php' );
+    public function renderReleasesPage() {
+        require_once( JUNIPER_AUTHOR_MAIN_DIR . '/templates/releases.php' );
+    }
+
+      public function renderOptionsPage() {
+        require_once( JUNIPER_AUTHOR_MAIN_DIR . '/templates/options-page.php' );
     }
 
     public function setupSettingsPage() {
-        add_options_page(
-            __( 'Juniper', 'juniper' ),
-            __( 'Juniper', 'juniper' ),
+    
+        add_menu_page( 
+            'Juniper',
+            'Juniper',
             'manage_options',
             'juniper',
-            array( $this, 'renderSettingsPage' )
+            array( $this, 'renderReleasesPage' ),
+            'dashicons-update'
+        );
+
+        add_submenu_page(
+            'juniper',
+            __( 'Manage Releases', 'juniper' ),
+            __( 'Manage Releases', 'juniper' ),
+            'manage_options',
+            'juniper',
+            array( $this, 'renderReleasesPage' )
         );   
+
+        add_submenu_page(
+            'juniper',
+            __( 'Authorship Options', 'juniper' ),
+            __( 'Authorship Options', 'juniper' ),
+            'manage_options',
+            'juniper-options',
+            array( $this, 'renderOptionsPage' )
+        );   
+
+
     }
 
     static function deleteAllOptions() {
         delete_option( NOTWPORG\Juniper\Settings::SETTING_KEY );
-        delete_option( NOTWPORG\WP_API_Privacy\Settings::UPDATED_KEY );
+        delete_option( NOTWPORG\Juniper\Settings::UPDATED_KEY );
     }
 }

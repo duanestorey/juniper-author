@@ -46,7 +46,7 @@ class JuniperAuthor extends GithubUpdater {
 
     public function add_action_links( $actions ) {
         $links = array(
-            '<a href="' . admin_url( 'options-general.php?page=api-privacy' ) . '">' . esc_html__( 'Settings', 'wp-api-privacy' ) . '</a>'
+            '<a href="' . admin_url( 'options-general.php?page=juniper' ) . '">' . esc_html__( 'Settings', 'wp-api-privacy' ) . '</a>'
         );
 
         return array_merge( $links, $actions );
