@@ -35,6 +35,7 @@
                     <th><?php _e( 'Package', 'juniper' ); ?></th>
                     <th><?php _e( 'Release Date', 'juniper' ); ?></th>
                     <th><?php _e( 'Signed', 'juniper' ); ?></th>
+                    <th><?php _e( 'Actions', 'juniper' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -51,6 +52,8 @@
                     <?php } else { ?>
                         <td class="yesno"><span class="red"><?php _e( 'No', 'juniper' ); ?></span></td>
                     <?php } ?>
+
+                    <td> <a href="<?php echo admin_url( 'admin.php?page=juniper&juniper_nonce=' . wp_create_nonce( 'juniper' ) . '&juniper_verify_package=' . $actualRelease->package ); ?>"><?php _e( 'Verify', 'juniper' ); ?></td>
                 </tr>
             <?php } ?>
             </tbody>

@@ -8,7 +8,7 @@
 namespace NOTWPORG\JuniperAuthor;
 
 class GitHubUpdater {
-    private const CACHE_TIME = ( 60 * 15 ); // 15 minutes
+    private const CACHE_TIME = ( 60 * 5 ); // 15 minutes
 
     protected $pluginSlug = null;
     protected $githubUser = null;

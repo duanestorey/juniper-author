@@ -94,9 +94,15 @@ class Settings {
                     $release->publishedDate = strtotime( $oneRelease->published_at );
 
                     $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $oneRelease->tag_name;
-                    $signedZip = $releasePath . '/' . str_replace( '.zip', '.signed.zip', basename( $oneRelease->assets[0]->browser_download_url ) );
+                    
+                    $release->signed = false;
 
-                    $release->signed = file_exists( $signedZip );
+                    if ( !empty( $oneRelease->assets[0]->browser_download_url ) ) {
+                        $signedZip = $releasePath . '/' . str_replace( '.zip', '.signed.zip', basename( $oneRelease->assets[0]->browser_download_url ) );
+                        $release->signed = file_exists( $signedZip );
+                    }
+                    
+                    $release->package = '';
 
                     if ( $release->signed ) {
                         $release->package = $signedZip;
@@ -219,7 +225,7 @@ class Settings {
         return false;
     }   
 
-    protected function mayebAddRepo( $repoUrl ) {
+    public function mayebAddRepo( $repoUrl ) {
         $repoInfo = $this->getRepoInfo( $repoUrl );
 
         if ( $repoInfo ) {

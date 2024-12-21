@@ -28,10 +28,10 @@ class JuniperAuthor extends GithubUpdater {
 
         // Plugin action links
         add_filter( 'plugin_action_links_' . plugin_basename( JUNIPER_AUTHOR_MAIN_FILE ), array( $this, 'add_action_links' ) );
-        add_filter( 'admin_init', array( $this, 'loadAssets' ) );
-        add_filter( 'admin_init', array( $this, 'handleRepoLinks' ) );
+        add_action( 'admin_init', array( $this, 'loadAssets' ) );
+        add_action( 'admin_init', array( $this, 'handleRepoLinks' ) );
         add_action( 'rest_api_init', array( $this, 'setupRestApi' ) );
-        add_action( 'shutdown', array( $this, 'lookForReleases' ) );
+       // add_action( 'init', array( $this, 'lookForReleases' ) );
         add_action( 'wp_ajax_handle_ajax', array( $this, 'handleAjax' ) );
         add_action( 'wp_ajax_nopriv_handle_ajax', array( $this, 'handleAjax' ) );
 
@@ -46,6 +46,8 @@ class JuniperAuthor extends GithubUpdater {
 
     public function init() {
         $this->settings->init();
+
+        $this->lookForReleases();
     }
 
     protected function testPrivateKey( $passPhrase ) {
@@ -167,7 +169,14 @@ class JuniperAuthor extends GithubUpdater {
     }
 
     public function lookForReleases() {
-        if ( true || time() > $this->settings->getSetting( 'next_release_time' ) ) {
+        if ( time() > $this->settings->getSetting( 'next_release_time' ) ) {
+            // update all repos
+            $repos = $this->settings->getSetting( 'repositories' );
+            $this->settings->setSetting( 'reposistories', [] );
+            foreach( $repos as $name => $info ) {
+                $this->settings->mayebAddRepo( $name );
+            }
+            
             $repos = $this->settings->getSetting( 'repositories' );
 
             $releases = [];
@@ -294,6 +303,28 @@ class JuniperAuthor extends GithubUpdater {
                         $this->settings->saveSettings();
                     }
                 }
+            } else if ( !empty( $_GET[ 'juniper_verify_package' ] ) ) {
+                $package = $_GET[ 'juniper_verify_package' ];
+
+                require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
+
+                $public_key = PublicKeyLoader::loadPublicKey( $this->settings->getSetting( 'public_key' ) );
+                $zip = new \ZipArchive();
+                $result = $zip->open( $package, \ZipArchive::RDONLY );
+                if ( $result === TRUE ) {
+                    $comment = $zip->getArchiveComment();
+                    if ( $comment ) {
+                        $comment = json_decode( $comment );
+                       // $comment->signature[0] = 'B';
+                        $sigBin = base64_decode( $comment->signature );
+                        $hashBin = base64_decode( $comment->hash );
+                    }
+                    $result = $public_key->verify( $hashBin, $sigBin );
+                    echo (int)$result . '<br/>';
+                    echo $comment->hash . '<br/>' . $comment->signature;
+                }
+                
+                die;   
             }
         }
     }

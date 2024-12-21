@@ -16,6 +16,7 @@
     GitHub Plugin URI: nowporg/juniper-author
     Stable: 1.0.2
     Primary Branch: main
+    Signing-Authority: https://duanestorey.com
 
     Copyright (C) 2024-025 by Duane Storey - All Rights Reserved
     You may use, distribute and modify this code under the
