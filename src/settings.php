@@ -209,7 +209,7 @@ class Settings {
                         'requires php' => 'requiresPHP',
                         'requires at least' => 'requiresAtLeast',
                         'tested up to' => 'testedUpTo',
-                        'Signing authority' => 'signingAuthority'
+                        'signing authority' => 'signingAuthority'
                     );
 
                     foreach( $mapping as $key => $value ) {

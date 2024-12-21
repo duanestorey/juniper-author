@@ -101,12 +101,12 @@ class JuniperAuthor extends GithubUpdater {
                                         $sig[ 'author' ] = $current_user->display_name;
                                     }
 
-
                                     $hashBin = hash_file( 'SHA256', $destinationZipFile, true );
                                     
                                     $sig[ 'hash' ] = base64_encode( $hashBin );
                                     $sig[ 'hash_type' ] = 'SHA256';
                                     $sig[ 'signature' ] = base64_encode( $private_key->sign( $hashBin ) );
+                                    //$sig[ 'package_url' ] =  plugins_url( basename( $repo ) . '/' . $releaseInfo->tag_name . '/' . str_replace( basename( $release->zipName ), JUNIPER_AUTHOR_MAIN_FILE );
                                 
                                     file_put_contents( $sigFile, json_encode( $sig ) );         
 
