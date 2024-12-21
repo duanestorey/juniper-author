@@ -39,6 +39,7 @@ class Settings {
                 __( 'Signing', 'juniper' ),
                 array(
                         $this->addSetting( 'textarea', 'private_key', __( 'Private key for signing', 'juniper' ) ),
+                        $this->addSetting( 'textarea', 'public_key', __( 'Public key for signing', 'juniper' ) ),
                 )
             );
         }
@@ -95,11 +96,13 @@ class Settings {
 
                     $key = openssl_pkey_new( $config ) ;
                     if ( $key ) {
-                        $details = openssl_pkey_get_details( $key) ;
+                        $details = openssl_pkey_get_details( $key ) ;
 
                         openssl_pkey_export( $key, $str, $_POST[ 'juniper_private_pw_1' ] );
 
                         $this->settings->private_key = $str;
+                        $this->settings->public_key = $details[ 'key' ];
+
                         $this->saveSettings();
                     }               
                 }
@@ -159,6 +162,7 @@ class Settings {
     }
 
     public function renderOneSetting( $setting ) {
+        echo '<div class="juniper-setting">';
         switch( $setting->type ) {
             case 'checkbox':
                 $checked = ( $this->getSetting( $setting->name ) ? ' checked' : '' );
@@ -185,6 +189,7 @@ class Settings {
                 echo '</select><br>';
                 break;
         }
+        echo '</div>';
     }
 
     public function getDefaultSettings() {

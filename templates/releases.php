@@ -20,14 +20,7 @@
                 openssl_pkey_export( $key, $str );
 
                 echo $str;
-                 // print_r( $details );
             }
-
-          
-
-           // echo openssl_error_string();
-
-           // die;
         ?>
 
     <p><?php esc_html_e( 'You can view and sign all releases here.', 'juniper' ); ?></p>
