@@ -70,6 +70,52 @@ class Settings {
         }
     }
 
+    public function getRepoName( $repoName ) {
+        if ( !empty( $this->settings->repositories[ $repoName ] ) ) {
+            return $this->settings->repositories[ $repoName ]->pluginName;
+        } else {
+            return false;
+        }
+    }
+
+    public function getReleases() {
+        $releases = [];
+
+        if ( !empty( $this->settings->releases ) ) {
+            foreach( $this->settings->releases as $repo => $releaseInfo ) {
+                $releases[ $repo ] = [];
+
+                foreach( $releaseInfo as $oneRelease ) {
+                    $release = new \stdClass;
+
+                    $release->tagName = $oneRelease->tag_name;
+                    $release->name = $oneRelease->name;
+                    $release->publishedDate = strtotime( $oneRelease->published_at );
+
+                    $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $oneRelease->tag_name;
+                    $signedZip = $releasePath . '/' . str_replace( '.zip', '.signed.zip', basename( $oneRelease->assets[0]->browser_download_url ) );
+
+                    $release->signed = file_exists( $signedZip );
+
+                    if ( $release->signed ) {
+                        $release->package = $signedZip;
+                        
+                    } else {
+                        if ( !empty( $oneRelease->assets[0]->browser_download_url ) ) {
+                            $release->package = $oneRelease->assets[0]->browser_download_url;
+                        }
+                    }
+
+                    $release->package_url = plugins_url( basename( $repo ) . '/' . $oneRelease->tag_name . '/' . basename( $release->package ), JUNIPER_AUTHOR_MAIN_FILE );
+                    
+                    $releases[ $repo ][] = $release;
+                }
+            }
+        }   
+
+        return $releases;
+    }
+
     public function processSubmittedSettings() {
         // These are our settings  
         if ( isset( $_POST[ 'juniper_author_settings' ] ) ) {

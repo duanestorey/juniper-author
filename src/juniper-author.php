@@ -48,6 +48,18 @@ class JuniperAuthor extends GithubUpdater {
         $this->settings->init();
     }
 
+    protected function testPrivateKey( $passPhrase ) {
+        try {
+            require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
+
+            $private_key = PublicKeyLoader::loadPrivateKey( $this->settings->getSetting( 'private_key' ), $passPhrase );
+
+            return true;
+        } catch ( \phpseclib3\Exception\NoKeyLoadedException $e ) {
+            return false;
+        }
+    }
+
     protected function signRepoPackage( $repo, $tagName, $passPhrase ) {
         try {
             require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
@@ -78,17 +90,20 @@ class JuniperAuthor extends GithubUpdater {
 
                                     $zip = new \ZipArchive();
 
-                                    $sigFile = tempnam( sys_get_temp_dir(), 'juniper-' );
+                                    $sigFile = $releasePath . '/juniper.sig';
                                 
                                     $sig = array();
 
                                     if ( $current_user->display_name ) {
                                         $sig[ 'author' ] = $current_user->display_name;
                                     }
+
+
+                                    $hashBin = hash_file( 'SHA512', $destinationZipFile, true );
                                     
-                                    $sig[ 'hash' ] = hash_file( 'SHA512', $destinationZipFile );
+                                    $sig[ 'hash' ] = base64_encode( $hashBin );
                                     $sig[ 'hash_type' ] = 'SHA512';
-                                    $sig[ 'signature' ] = $private_key->sign( $sig[ 'hash' ] );
+                                    $sig[ 'signature' ] = base64_encode( $private_key->sign( $hashBin ) );
                                 
                                     file_put_contents( $sigFile, json_encode( $sig ) );         
 
@@ -127,8 +142,6 @@ class JuniperAuthor extends GithubUpdater {
         if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
             switch( $action ) {
                 case 'sign_release':
-                    
-                    $response->data = $_POST;
                     $repo = $_POST[ 'repo' ];
                     $tag = $_POST[ 'tag' ];
                     $passPhrase = $_POST[ 'pw' ];
@@ -138,6 +151,11 @@ class JuniperAuthor extends GithubUpdater {
                     $response->signed = true;
                     $response->signed_text = __( 'Yes', 'juniper' );
                     
+                    break;
+                case 'test_key':
+                    $passPhrase = $_POST[ 'pw' ];
+
+                    $response->key_valid = $this->testPrivateKey( $passPhrase );
                     break;
             }
         }
@@ -178,6 +196,19 @@ class JuniperAuthor extends GithubUpdater {
         }
     }
 
+    public function getPublicKey() {
+        $public_key = $this->settings->getSetting( 'public_key' );
+        if ( $public_key ) {
+            $public_key = trim( str_replace( 
+                array( '-----BEGIN PUBLIC KEY-----', '-----END PUBLIC KEY-----' ), 
+                array( '', '' ),
+                $public_key
+            ) );
+        }
+
+        return $public_key;   
+    }
+
     public function outputPublicKey( $data ) {
         $data = new \stdClass;
         $data->public_key = '';
@@ -186,15 +217,32 @@ class JuniperAuthor extends GithubUpdater {
         if ( $public_key ) {
             $data->version = '1.0';
             $data->key_type = $this->settings->getSetting( 'key_type' );
-            $data->public_key = trim( str_replace( 
-                array( '-----BEGIN PUBLIC KEY-----', '-----END PUBLIC KEY-----' ), 
-                array( '', '' ),
-                $public_key
-            ) );
+            $data->public_key = $this->getPublicKey();
         }
 
         return $data;
     }
+
+    public function outputReleases( $params ) {
+        $data = new \stdClass;
+
+        $releases = $this->settings->getReleases();
+        foreach( $releases as $repo => $releaseInfo ) {
+            $pluginData = new \stdClass;
+
+            $pluginData->name = $this->settings->getSetting( 'repositories' )[ $repo ];
+            $pluginData->slug = basename( $repo );
+            $pluginData->releases = [];
+
+            foreach( $releaseInfo as $oneRelease ) {
+                $pluginData->releases[] = $oneRelease;
+            }
+
+            $data->plugins[] = $pluginData;
+        }
+
+        return $data;
+    }   
 
     public function setupRestApi() {
         register_rest_route( 
@@ -202,6 +250,14 @@ class JuniperAuthor extends GithubUpdater {
             array(
                 'methods' => 'GET',
                 'callback' => array( $this, 'outputPublicKey' ),
+            ) 
+        );
+
+        register_rest_route( 
+            'juniper/v1', '/releases/', 
+            array(
+                'methods' => 'GET',
+                'callback' => array( $this, 'outputReleases' ),
             ) 
         );
     }

@@ -34,35 +34,47 @@ function juniperBegin() {
     jQuery( 'a.digitally-sign' ).click( function( e ) {
         e.preventDefault();
 
-        setProgressBarPercent( 0 );
-        showProgressBar();
-        hideSigningForm();
-
-        var allReleases = jQuery( 'tr.unsigned' );
-        var releaseCount = allReleases.size();
-        var currentItem = 0;
-        if ( releaseCount ) {
-            allReleases.each( function() {
-                var thisItem = jQuery( this );
-
-                var params = {
-                    repo: jQuery( this ).attr( 'data-repo' ),
-                    tag: jQuery( this ).attr( 'data-tag' ),
-                    pw: jQuery( '#juniper_private_pw_1' ).val()
-                };
-
-                juniperAjax( 'sign_release', params, function( response ) { 
-                    //alert( response );
-                    var decodedResponse = jQuery.parseJSON( response );
-                    currentItem++;
-                   // alert( decodedResponse.signed_text );
-                    
-                    thisItem.find( 'td.yesno' ).html( '<span class="green">' + decodedResponse.signed_text + '</span>' );
-                    thisItem.find( 'td.package' ).html( decodedResponse.package );
-                    setProgressBarPercent( currentItem * 100 / ( releaseCount ) );
-                });
-            });
+        var params = {
+            pw: jQuery( '#juniper_private_pw_1' ).val()
         }
+
+        juniperAjax( 'test_key', params, function( response ) { 
+            var decodedResponse = jQuery.parseJSON( response );
+            if( !decodedResponse.key_valid ) {
+                alert( 'Unable to load private key - possible passphrase error' );
+            } else {
+                setProgressBarPercent( 0 );
+                showProgressBar();
+                hideSigningForm();
+
+                var allReleases = jQuery( 'tr.unsigned' );
+                var releaseCount = allReleases.size();
+                var currentItem = 0;
+                if ( releaseCount ) {
+                    allReleases.each( function() {
+                        var thisItem = jQuery( this );
+
+                        params = {
+                            repo: jQuery( this ).attr( 'data-repo' ),
+                            tag: jQuery( this ).attr( 'data-tag' ),
+                            pw: jQuery( '#juniper_private_pw_1' ).val()
+                        };
+
+                        juniperAjax( 'sign_release', params, function( response ) { 
+                            //alert( response );
+                            decodedResponse = jQuery.parseJSON( response );
+                            currentItem++;
+                            
+                            thisItem.find( 'td.yesno' ).html( '<span class="green">' + decodedResponse.signed_text + '</span>' );
+                            thisItem.find( 'td.package' ).html( decodedResponse.package );
+                            setProgressBarPercent( currentItem * 100 / ( releaseCount ) );
+                        });
+                    });
+                }
+
+                setProgressBarPercent( 100 );
+            }
+        });
     });
 }
 

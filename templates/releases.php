@@ -25,7 +25,7 @@
         <div class="bar">10%</div>
     </div> 
     
-    <?php foreach( $this->getSetting( 'releases' ) as $repo => $releaseInfo ) { ?>
+    <?php foreach( $this->getReleases() as $repo => $releaseInfo ) { ?>
         <h2><?php echo esc_html( $repoInfo[ $repo ]->pluginName ); ?></h2>
         <table class="repo-table striped wp-list-table widefat releases" role="presentation">
             <thead>
@@ -40,14 +40,13 @@
             <tbody>
                 
             <?php foreach( $releaseInfo as $actualRelease ) { ?>
-                <?php $signed = ( !empty( $actualRelease->is_signed ) ); ?>
-                <tr class="one-release<?php if ( $signed ) echo ' signed'; else echo ' unsigned'; ?>" data-repo="<?php esc_attr_e( $repo ); ?>" data-tag="<?php esc_attr_e( $actualRelease->tag_name ); ?>">
-                    <td><?php echo esc_html( $actualRelease->tag_name ); ?></td>
+                <tr class="one-release<?php if ( $actualRelease->signed ) echo ' signed'; else echo ' unsigned'; ?>" data-repo="<?php esc_attr_e( $repo ); ?>" data-tag="<?php esc_attr_e( $actualRelease->tagName ); ?>">
+                    <td><?php echo esc_html( $actualRelease->tagName ); ?></td>
                     <td><?php echo esc_html( $actualRelease->name ); ?></td>
                     
-                    <td class="package"><?php echo esc_html( $actualRelease->assets[0]->name ); ?></td>
-                    <td><?php echo date( 'M jS, Y', strtotime( $actualRelease->published_at ) ); ?></td>
-                    <?php if ( $signed ) { ?>
+                    <td class="package"><?php echo esc_html( basename( $actualRelease->package ) ); ?></td>
+                    <td><?php echo date( 'M jS, Y', $actualRelease->publishedDate ); ?></td>
+                    <?php if ( $actualRelease->signed ) { ?>
                         <td class="yesno"><span class="green"><?php _e( 'Yes', 'juniper' ); ?></span></td>
                     <?php } else { ?>
                         <td class="yesno"><span class="red"><?php _e( 'No', 'juniper' ); ?></span></td>
