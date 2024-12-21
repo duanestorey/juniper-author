@@ -1,7 +1,36 @@
-<div class="wrap">
+<div class="wrap juniper">
     <h1><?php esc_html_e( 'Author/Releases', 'juniper' ); ?></h1>
 
-    <p><?php esc_html_e( 'You can view all releases here, and sign ones when necessary.', 'juniper' ); ?></p>
+            <?php
+        
+                $curves = openssl_get_curve_names();
+
+                print_r( $curves );
+
+                  $config = array(
+                        "curve_name" => 'brainpoolP224r1',
+                        "private_key_type" => OPENSSL_KEYTYPE_RSA,
+                );
+
+            $key = openssl_pkey_new( $config ) ;
+            if ( $key ) {
+      
+                $details = openssl_pkey_get_details($key);
+
+                openssl_pkey_export( $key, $str );
+
+                echo $str;
+                 // print_r( $details );
+            }
+
+          
+
+           // echo openssl_error_string();
+
+           // die;
+        ?>
+
+    <p><?php esc_html_e( 'You can view and sign all releases here.', 'juniper' ); ?></p>
 
     <?php $this->doOptionsHeader(); ?>
 
@@ -10,6 +39,18 @@
         <input type="hidden" name="juniper_author_nonce" value="<?php echo wp_create_nonce( 'juniper' ); ?>">
         <table class="form-table" role="presentation">
             <tbody>
+            <?php foreach( $this->settingsPages[ 'releases' ] as $name => $data ) { ?>
+                    <tr>
+                        <th><?php echo esc_html( $data[ 0 ] ); ?></th>
+                        <td>
+                            <fieldset>
+                                <?php foreach( $data[ 1 ] as $setting ) { ?>
+                                    <?php $this->renderOneSetting( $setting ); ?>
+                                <?php } ?>
+                            </fieldset>
+                        </td>
+                    </tr>
+                <?php }?> 
             </tbody>
         </table>
         <input type="submit" id="submit" class="button button-primary" name="submit" value="<?php esc_attr_e( 'Save Changes', 'juniper' ); ?>" />

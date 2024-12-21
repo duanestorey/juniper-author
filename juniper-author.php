@@ -14,6 +14,7 @@
     Text Domain: juniper
     Domain Path: /lang
     GitHub Plugin URI: nowporg/juniper-author
+    Stable: 1.0.0
     Primary Branch: main
 
     Copyright (C) 2024-025 by Duane Storey - All Rights Reserved

@@ -18,6 +18,7 @@ class Settings {
     public const UPDATED_KEY = "juniper_author_settings_updated";
 
     protected $settings = null;
+    protected $settingsPages = [];
     protected $settingsSections = [];
 
     public function __construct() {
@@ -30,12 +31,13 @@ class Settings {
 
             $this->processSubmittedSettings();
 
+            $this->settingsPages[ 'options' ] = [];
             $this->addSettingsSection( 
-                'debug', 
-                __( 'Debug', 'juniper' ),
+                $this->settingsPages[ 'options' ],
+                'Signing', 
+                __( 'Signing', 'juniper' ),
                 array(
-                        $this->addSetting( 'checkbox', 'disable_https', __( 'Disable HTTPs for packet sniffing (should only be used for testing)', 'wp-api-privacy' ) ),
-                        $this->addSetting( 'checkbox', 'reset_settings', __( 'Reset settings to default state (this is destructive, use with care)', 'wp-api-privacy' ) ),
+                        $this->addSetting( 'textarea', 'private_key', __( 'Private key for signing', 'juniper' ) ),
                 )
             );
         }
@@ -114,8 +116,8 @@ class Settings {
         }
     }
 
-    public function addSettingsSection( $section, $desc, $settings ) {
-        $this->settingsSections[ $section ] = [ $desc, $settings  ];
+    public function addSettingsSection( &$page, $section, $desc, $settings ) {
+       $page[ $section ] = [ $desc, $settings  ];
     }
 
     public function addSetting( $settingType, $settingName, $settingDesc ) {
@@ -145,6 +147,13 @@ class Settings {
                 echo esc_html( $setting->desc ) . '</label>';
                 echo "<br>";
                 break;
+            case 'textarea':
+                $currentSetting = $this->getSetting( $setting->name );
+                echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '">' . esc_html( $setting->desc ) . '</label><br/>';
+                echo '<textarea rows="10" name="wpsetting_' . esc_attr( $setting->name ) . '">';
+                echo esc_html( $currentSetting );
+                echo '</textarea>';
+                break;
             case 'select':
                 echo '<select name="wpsetting_'. esc_attr( $setting->name ) . '">';
                 $currentSetting = $this->getSetting( $setting->name );
@@ -161,6 +170,8 @@ class Settings {
         $settings = new \stdClass;
 
         // Adding default settings
+        $settings->private_key = '';
+        $settings->public_key = '';
 
         return $settings;
     }

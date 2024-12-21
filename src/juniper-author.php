@@ -26,6 +26,7 @@ class JuniperAuthor extends GithubUpdater {
 
         // Plugin action links
         add_filter( 'plugin_action_links_' . plugin_basename( JUNIPER_AUTHOR_MAIN_FILE ), array( $this, 'add_action_links' ) );
+        add_filter( 'admin_init', array( $this, 'loadAssets' ) );
 
         // initialize the updater
         parent::__construct( 
@@ -38,6 +39,16 @@ class JuniperAuthor extends GithubUpdater {
 
     public function init() {
         $this->settings->init();
+    }
+
+    public function loadAssets() {
+        if ( !empty( $_GET[ 'page' ] ) ) {
+            $currentPage = $_GET[ 'page' ];
+
+            if ( $currentPage == 'juniper-options' ) {
+                wp_enqueue_style( 'juniper-author', plugins_url( 'dist/juniper.css', JUNIPER_AUTHOR_MAIN_FILE ), false );
+            }
+        }
     }
 
     public function get_setting( $name ) {
