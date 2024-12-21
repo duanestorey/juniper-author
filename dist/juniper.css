@@ -1,16 +1,24 @@
 .juniper textarea {
-  width: 600px; }
+  width: 600px;
+}
+.juniper .red {
+  color: red;
+}
 .juniper .repo-table {
-  width: 100%; }
-  .juniper .repo-table thead th {
-    text-align: left; }
+  width: 100%;
+}
+.juniper .repo-table thead th {
+  text-align: left;
+}
 .juniper .text input {
-  width: 50%; }
+  width: 50%;
+}
 .juniper .text label {
-  padding-left: 10px; }
+  padding-left: 10px;
+}
 .juniper .setting {
-  margin-bottom: 15px; }
-  .juniper .setting p {
-    max-width: 600px; }
-
-/*# sourceMappingURL=juniper.css.map */
+  margin-bottom: 15px;
+}
+.juniper .setting p {
+  max-width: 600px;
+}

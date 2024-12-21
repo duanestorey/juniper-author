@@ -8,7 +8,7 @@
 namespace NOTWPORG\JuniperAuthor;
 
 class GitHubUpdater {
-    private const CACHE_TIME = ( 60 * 60 ); // 15 minutes
+    private const CACHE_TIME = ( 60 * 15 ); // 15 minutes
 
     protected $pluginSlug = null;
     protected $githubUser = null;
@@ -130,8 +130,8 @@ class GitHubUpdater {
     protected function setupTransientKeys() {
         $this->cacheModifier = md5( $this->pluginSlug );
 
-        $this->tagCacheKey = 'wp_priv_tag_' . $this->cacheModifier;
-        $this->headerCacheKey = 'wp_priv_hdr_' . $this->cacheModifier;
+        $this->tagCacheKey = 'wp_juniper_' . $this->cacheModifier;
+        $this->headerCacheKey = 'wp_juniper_' . $this->cacheModifier;
     }
 
     private function setupGithubUrls() {
@@ -167,7 +167,7 @@ class GitHubUpdater {
 
     private function checkForUpdate() {
         $headerData = $this->getHeaderInfo();
-        $releaseInfo = $this->getReleaseInfo();
+        $releaseInfo = $this->_getReleaseInfo();
 
         if ( $headerData && $releaseInfo && isset( $headerData[ 'stabe' ] ) ) {
             $latestVersion = $headerData[ 'stable' ];
@@ -211,16 +211,22 @@ class GitHubUpdater {
         }
     }
 
-    private function getReleaseInfo() {
+    private function _getReleaseInfo() {
+        return $this->getReleaseInfo( $this->githubTagApi );
+    }
+
+    public function getReleaseInfo( $releaseUrl ) {
+        $cache_key = 'wp_juniper_releases_' . md5( $releaseUrl );
         // Use the Github API to obtain release information
-        $githubTagData = get_transient( $this->tagCacheKey );
+        $githubTagData = get_transient( $cache_key );
         if ( !$githubTagData ) {
-            $result = wp_remote_get( $this->githubTagApi );
+            $result = wp_remote_get( $releaseUrl );
             if ( !is_wp_error( $result ) ) {
                 $githubTagData = json_decode( wp_remote_retrieve_body( $result ) );
                
                 if ( $githubTagData ) {
-                    set_transient( $this->tagCacheKey, $githubTagData, GitHubUpdater::CACHE_TIME );
+
+                    set_transient( $cache_key, $githubTagData, GitHubUpdater::CACHE_TIME );
                 }
             } 
         }

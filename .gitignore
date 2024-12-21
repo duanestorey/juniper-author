@@ -1,1 +1,7 @@
 .DS_Store
+vendor
+node_modules
+releases
+composer.lock
+package-lock.json
+dist/mix-manifest.json

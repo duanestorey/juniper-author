@@ -7,6 +7,8 @@
 
 namespace NOTWPORG\JuniperAuthor;
 
+use phpseclib3\Crypt\EC;
+
 // Prevent direct access
 if ( ! defined( 'WPINC' ) ) {
     die;
@@ -27,7 +29,10 @@ class Settings {
     }
     
     public function init() {
+        //delete_option( Settings::SETTING_KEY );
         if ( is_admin() ) {
+            
+
             add_action( 'admin_menu', array( $this, 'setupSettingsPage' ) );
 
             $this->processSubmittedSettings();
@@ -107,18 +112,35 @@ class Settings {
             $nonce = $_POST[ 'juniper_author_nonce' ];
             if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
                 if ( $_POST[ 'juniper_private_pw_1' ] == $_POST[ 'juniper_private_pw_2' ] ) {
+                    require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
+
+                    $private = EC::createKey('Ed25519')->withPassword( $_POST[ 'juniper_private_pw_1' ] );
+                    $public = $private->getPublicKey();
+
+                    $this->settings->private_key = $private->toString( 'PKCS8' );
+                    $this->settings->key_type = 'ed25519';
+                    $this->settings->public_key = $private->getPublicKey()->toString( 'PKCS8' );;
+
+                    $this->saveSettings();
+                    /*
+
                     $curves = openssl_get_curve_names();
                     if ( in_array( 'secp256k1', $curves ) ) {
                         $config = array(
                             "curve" => 'secp256k1',
                             "private_key_type" => OPENSSL_KEYTYPE_RSA,
                         );
+
+                        $this->settings->key_type = 'secp256k1';
                     } else {
                         $config = array(
                             "private_key_bits" => 2048,
                             "private_key_type" => OPENSSL_KEYTYPE_RSA,
                         );
+
+                        $this->settings->key_type = 'rsa2048';
                     }
+
 
                     $key = openssl_pkey_new( $config ) ;
                     if ( $key ) {
@@ -131,6 +153,7 @@ class Settings {
 
                         $this->saveSettings();
                     }               
+                    */
                 }
             }
         }
@@ -253,7 +276,7 @@ class Settings {
             case 'textarea':
                 $currentSetting = $this->getSetting( $setting->name );
                 echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '"><strong>' . esc_html( $setting->desc ) . '</strong></label><br/>';
-                echo '<textarea rows="10" name="wpsetting_' . esc_attr( $setting->name ) . '" readonly>';
+                echo '<textarea rows="6" name="wpsetting_' . esc_attr( $setting->name ) . '" readonly>';
                 echo esc_html( $currentSetting );
                 echo '</textarea>';
                 break;
@@ -285,11 +308,15 @@ class Settings {
         // Adding default settings
         $settings->private_key = '';
         $settings->public_key = '';
+        $settings->key_type = false;
 
         $settings->reset_key = false;
         $settings->new_repo_name = false;
 
         $settings->repositories = [];
+
+        $settings->next_release_time = 0;
+        $settings->releases = [];
 
         return $settings;
     }
@@ -314,7 +341,8 @@ class Settings {
             'manage_options',
             'juniper',
             array( $this, 'renderReleasesPage' ),
-            'dashicons-update'
+            'dashicons-update',
+            60
         );
 
         add_submenu_page(

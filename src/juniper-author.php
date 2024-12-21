@@ -28,6 +28,8 @@ class JuniperAuthor extends GithubUpdater {
         add_filter( 'plugin_action_links_' . plugin_basename( JUNIPER_AUTHOR_MAIN_FILE ), array( $this, 'add_action_links' ) );
         add_filter( 'admin_init', array( $this, 'loadAssets' ) );
         add_filter( 'admin_init', array( $this, 'handleRepoLinks' ) );
+        add_action( 'rest_api_init', array( $this, 'setupRestApi' ) );
+        add_action( 'shutdown', array( $this, 'lookForReleases' ) );
 
         // initialize the updater
         parent::__construct( 
@@ -42,11 +44,98 @@ class JuniperAuthor extends GithubUpdater {
         $this->settings->init();
     }
 
+    public function signReleases( $passphrase = false) {             
+        // process zips
+        $releases = $this->settings->getSetting( 'releases' );
+
+        @mkdir( JUNIPER_AUTHOR_RELEASES_PATH, 0755 );
+
+        foreach( $releases as $repo => $releaseInfo ) {
+            foreach( $releaseInfo as $actualRelease ) {
+                $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $actualRelease->tag_name	;
+
+                if ( !file_exists( $releasePath ) ) {
+                    @mkdir( $releasePath, 0755, true );
+                };
+
+                if ( !empty( $actualRelease->assets[0]->name ) ) {
+                    $zipName = $actualRelease->assets[0]->name;
+                    $destinationZipFile = $releasePath . '/' . $zipName;
+
+                    if ( !file_exists( $destinationZipFile ) ) {
+                        copy( $actualRelease->assets[0]->browser_download_url, $destinationZipFile ); 
+                    }
+                }
+            }
+        }     
+    }
+
+    public function lookForReleases() {
+        if ( true || time() > $this->settings->getSetting( 'next_release_time' ) ) {
+            $repos = $this->settings->getSetting( 'repositories' );
+
+            $releases = [];
+
+            $hadReleases = false;
+            if ( count( $repos ) ) {
+                foreach( $repos as $url => $repoData ) {
+                    $repoUrl = str_replace( 'https://github.com/', 'https://api.github.com/repos/', $url . '/releases' );
+
+                    $info = $this->getReleaseInfo( $repoUrl );
+
+                    if ( $info ) {
+                        $hadReleases = true;
+
+                        $releases[ $url ] = $info;
+                       
+                    }
+                }
+                if ( $hadReleases ) {
+                     $this->settings->setSetting( 'releases', $releases );
+                }  
+            }
+
+            // update next time for at least 15 minutes
+            $this->settings->setSetting( 'next_release_time', time() + 15*60 );
+            $this->settings->saveSettings();
+        }
+
+        $this->signReleases();   
+    }
+
+    public function outputPublicKey( $data ) {
+        $data = new \stdClass;
+        $data->public_key = '';
+        
+        $public_key = $this->settings->getSetting( 'public_key' );
+        if ( $public_key ) {
+            $data->version = '1.0';
+            $data->key_type = $this->settings->getSetting( 'key_type' );
+            $data->public_key = trim( str_replace( 
+                array( '-----BEGIN PUBLIC KEY-----', '-----END PUBLIC KEY-----' ), 
+                array( '', '' ),
+                $public_key
+            ) );
+        }
+
+        return $data;
+    }
+
+    public function setupRestApi() {
+        register_rest_route( 
+            'juniper/v1', '/public_key/', 
+            array(
+                'methods' => 'GET',
+                'callback' => array( $this, 'outputPublicKey' ),
+            ) 
+        );
+    }
+
     public function loadAssets() {
         if ( !empty( $_GET[ 'page' ] ) ) {
             $currentPage = $_GET[ 'page' ];
 
-            if ( $currentPage == 'juniper-options' || $currentPage == 'juniper-repos' ) {
+            if ( $currentPage == 'juniper-options' || $currentPage == 'juniper-repos' || $currentPage == 'juniper' ) {
                 wp_enqueue_style( 'juniper-author', plugins_url( 'dist/juniper.css', JUNIPER_AUTHOR_MAIN_FILE ), false );
             }
         }
