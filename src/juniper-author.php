@@ -234,13 +234,13 @@ class JuniperAuthor extends GithubUpdater {
     }
 
     public function outputReleases( $params ) {
-        $data = new \stdClass;
+        $data = [];
 
         $releases = $this->settings->getReleases();
         foreach( $releases as $repo => $releaseInfo ) {
             $pluginData = new \stdClass;
 
-            $pluginData->name = $this->settings->getSetting( 'repositories' )[ $repo ];
+            $pluginData->info = $this->settings->getSetting( 'repositories' )[ $repo ];
             $pluginData->slug = basename( $repo );
             $pluginData->releases = [];
 
@@ -248,7 +248,7 @@ class JuniperAuthor extends GithubUpdater {
                 $pluginData->releases[] = $oneRelease;
             }
 
-            $data->plugins[] = $pluginData;
+            $data[] = $pluginData;
         }
 
         return $data;
@@ -315,7 +315,7 @@ class JuniperAuthor extends GithubUpdater {
                     $comment = $zip->getArchiveComment();
                     if ( $comment ) {
                         $comment = json_decode( $comment );
-                       // $comment->signature[0] = 'B';
+                       //    $comment->signature[0] = 'B';
                         $sigBin = base64_decode( $comment->signature );
                         $hashBin = base64_decode( $comment->hash );
                     }

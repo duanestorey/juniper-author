@@ -208,7 +208,8 @@ class Settings {
                         'author' => 'author',
                         'requires php' => 'requiresPHP',
                         'requires at least' => 'requiresAtLeast',
-                        'tested up to' => 'testedUpTo'
+                        'tested up to' => 'testedUpTo',
+                        'Signing authority' => 'signingAuthority'
                     );
 
                     foreach( $mapping as $key => $value ) {
