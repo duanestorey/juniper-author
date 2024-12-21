@@ -36,10 +36,12 @@ class Settings {
             $this->addSettingsSection( 
                 $this->settingsPages[ 'options' ],
                 'Signing', 
-                __( 'Signing', 'juniper' ),
+                __( 'Code Signing', 'juniper' ),
                 array(
-                        $this->addSetting( 'textarea', 'private_key', __( 'Private key for signing', 'juniper' ) ),
-                        $this->addSetting( 'textarea', 'public_key', __( 'Public key for signing', 'juniper' ) ),
+                        $this->addSetting( 'textarea', 'private_key', __( 'Private Key', 'juniper' ) ),
+                        $this->addSetting( 'textarea', 'public_key', __( 'Public Key', 'juniper' ) ),
+                        $this->addSetting( 'txtrecord', 'public_key', __( 'Update TXT records' ) ),
+                        $this->addSetting( 'checkbox', 'reset_key', __( 'Delete keys (this is destructive, for testing only)', 'juniper' ) ),
                 )
             );
         }
@@ -55,9 +57,9 @@ class Settings {
 
     public function processSubmittedSettings() {
         // These are our settings  
-        if ( isset( $_POST[ 'wp_api_privacy_settings' ] ) ) {
-            $nonce = $_POST[ 'wp_api_privacy_nonce' ];
-            if ( wp_verify_nonce( $nonce, 'wpprivacy' ) && current_user_can( 'manage_options' ) ) {
+        if ( isset( $_POST[ 'juniper_author_settings' ] ) ) {
+            $nonce = $_POST[ 'juniper_author_nonce' ];
+            if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
                 // get a list of submitted settings that don't include our hidden fields
                 $defaultSettings = $this->getDefaultSettings();
                 foreach( $defaultSettings as $name => $dontNeed ) {
@@ -77,10 +79,11 @@ class Settings {
 
                 // Settings are saved, show notification on next page
                 update_option( Settings::UPDATED_KEY, 1, false );
-                if ( isset( $this->settings->reset_settings ) && $this->settings->reset_settings ) {
-                    delete_option( Settings::SETTING_KEY );
-                    $this->settings = null;
-                    $this->loadSettings();
+                if ( isset( $this->settings->reset_key ) && $this->settings->reset_key ) {
+                    $this->settings->private_key = null;
+                    $this->settings->public_key = null;
+                    $this->settings->reset_key = false;
+                    $this->saveSettings();
                 } else {
                     $this->saveSettings();
                 } 
@@ -162,7 +165,7 @@ class Settings {
     }
 
     public function renderOneSetting( $setting ) {
-        echo '<div class="juniper-setting">';
+        echo '<div class="setting">';
         switch( $setting->type ) {
             case 'checkbox':
                 $checked = ( $this->getSetting( $setting->name ) ? ' checked' : '' );
@@ -174,8 +177,8 @@ class Settings {
                 break;
             case 'textarea':
                 $currentSetting = $this->getSetting( $setting->name );
-                echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '">' . esc_html( $setting->desc ) . '</label><br/>';
-                echo '<textarea rows="10" name="wpsetting_' . esc_attr( $setting->name ) . '">';
+                echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '"><strong>' . esc_html( $setting->desc ) . '</strong></label><br/>';
+                echo '<textarea rows="10" name="wpsetting_' . esc_attr( $setting->name ) . '" readonly>';
                 echo esc_html( $currentSetting );
                 echo '</textarea>';
                 break;
@@ -188,6 +191,10 @@ class Settings {
                 }
                 echo '</select><br>';
                 break;
+            case 'txtrecord':
+                $currentSetting = $this->getSetting( $setting->name );
+                echo '<p>' . __( 'Please ensure you set a DNS record for the URL of your signing-authority URL of type TXT for <strong>_wpsign</strong>, using your entire public key (not private) as the value', 'juniper' ) . '</p>';
+                break;
         }
         echo '</div>';
     }
@@ -198,6 +205,8 @@ class Settings {
         // Adding default settings
         $settings->private_key = '';
         $settings->public_key = '';
+
+        $settings->reset_key = false;
 
         return $settings;
     }

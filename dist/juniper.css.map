@@ -1,6 +1,6 @@
 {
 "version": 3,
-"mappings": "AACI,iBAAS;EACL,KAAK,EAAE,KAAK",
+"mappings": "AACI,iBAAS;EACL,KAAK,EAAE,KAAK;AAGhB,iBAAS;EACL,aAAa,EAAE,IAAI;EAMnB,mBAAE;IACE,SAAS,EAAE,KAAK",
 "sources": ["../assets/juniper.scss"],
 "names": [],
 "file": "juniper.css"
