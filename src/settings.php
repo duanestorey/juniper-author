@@ -223,7 +223,11 @@ class Settings {
         require_once( JUNIPER_AUTHOR_MAIN_DIR . '/templates/releases.php' );
     }
 
-      public function renderOptionsPage() {
+    public function renderReposPage() {
+        require_once( JUNIPER_AUTHOR_MAIN_DIR . '/templates/repos-page.php' );
+    }
+
+    public function renderOptionsPage() {
         require_once( JUNIPER_AUTHOR_MAIN_DIR . '/templates/options-page.php' );
     }
 
@@ -245,7 +249,17 @@ class Settings {
             'manage_options',
             'juniper',
             array( $this, 'renderReleasesPage' )
-        );   
+        );  
+
+        
+        add_submenu_page(
+            'juniper',
+            __( 'Repositories', 'juniper' ),
+            __( 'Repositories', 'juniper' ),
+            'manage_options',
+            'juniper-repos',
+            array( $this, 'renderReposPage' )
+        );    
 
         add_submenu_page(
             'juniper',
