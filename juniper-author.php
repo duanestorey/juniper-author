@@ -6,7 +6,7 @@
     Description: Facilitates code signing and releases for WordPress add-ons using the Juniper release system for WordPress
     Author: Duane Storey
     Author URI: https://duanestorey.com
-    Version: 1.0.0
+    Version: 1.0.2
     Requires PHP: 6.0
     Requires at least: 6.0
     Tested up to: 6.7
@@ -14,7 +14,7 @@
     Text Domain: juniper
     Domain Path: /lang
     GitHub Plugin URI: nowporg/juniper-author
-    Stable: 1.0.0
+    Stable: 1.0.2
     Primary Branch: main
 
     Copyright (C) 2024-025 by Duane Storey - All Rights Reserved
