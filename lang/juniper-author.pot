@@ -9,14 +9,13 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-12-21T03:30:30+00:00\n"
+"POT-Creation-Date: 2024-12-21T07:08:20+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: juniper\n"
 
 #. Plugin Name of the plugin
 #: juniper-author.php
-#: templates/options-page.php:2
 msgid "Juniper/Author"
 msgstr ""
 
@@ -40,15 +39,130 @@ msgstr ""
 msgid "https://duanestorey.com"
 msgstr ""
 
-#: src/settings.php:165
-#: src/settings.php:166
-msgid "Juniper"
+#: src/settings.php:39
+msgid "Add New Repository"
+msgstr ""
+
+#: src/settings.php:41
+msgid "Enter Github Repository URL"
+msgstr ""
+
+#: src/settings.php:49
+msgid "Code Signing"
+msgstr ""
+
+#: src/settings.php:51
+msgid "Private Key"
+msgstr ""
+
+#: src/settings.php:52
+msgid "Public Key"
+msgstr ""
+
+#: src/settings.php:54
+msgid "Delete keys (this is destructive, for testing only)"
+msgstr ""
+
+#: src/settings.php:276
+msgid "Please ensure you set a DNS record for the URL of your signing-authority URL of type TXT for <strong>_wpsign</strong>, using your entire public key (not private) as the value"
+msgstr ""
+
+#: src/settings.php:322
+#: src/settings.php:323
+msgid "Manage Releases"
+msgstr ""
+
+#: src/settings.php:332
+#: src/settings.php:333
+msgid "Repositories"
+msgstr ""
+
+#: src/settings.php:341
+#: src/settings.php:342
+msgid "Authorship Options"
+msgstr ""
+
+#: templates/options-page.php:2
+msgid "Author/Options"
 msgstr ""
 
 #: templates/options-page.php:5
 msgid "You can configure the options for Juniper/Author here."
 msgstr ""
 
-#: templates/options-page.php:29
+#: templates/options-page.php:32
+#: templates/releases.php:49
 msgid "Save Changes"
+msgstr ""
+
+#: templates/options-page.php:41
+msgid "Private Key Generation"
+msgstr ""
+
+#: templates/options-page.php:43
+msgid "Juniper requires a private cryptographic key to sign all releases. To create a private key pair, enter a password below and click generate. "
+msgstr ""
+
+#: templates/options-page.php:45
+msgid "This password will be required to sign all releases, and is never saved."
+msgstr ""
+
+#: templates/options-page.php:49
+msgid "Enter password to protect private key"
+msgstr ""
+
+#: templates/options-page.php:54
+msgid "Confirm password to protect private key"
+msgstr ""
+
+#: templates/options-page.php:62
+msgid "Generate Key Pair"
+msgstr ""
+
+#: templates/releases.php:2
+msgid "Author/Releases"
+msgstr ""
+
+#: templates/releases.php:26
+msgid "You can view and sign all releases here."
+msgstr ""
+
+#: templates/repos.php:2
+msgid "Author/Repositories"
+msgstr ""
+
+#: templates/repos.php:4
+msgid "You can manage your repositories here"
+msgstr ""
+
+#: templates/repos.php:11
+msgid "Name"
+msgstr ""
+
+#: templates/repos.php:12
+msgid "Type"
+msgstr ""
+
+#: templates/repos.php:13
+msgid "URL"
+msgstr ""
+
+#: templates/repos.php:14
+msgid "Latest"
+msgstr ""
+
+#: templates/repos.php:15
+msgid "Actions"
+msgstr ""
+
+#: templates/repos.php:27
+msgid "Remove"
+msgstr ""
+
+#: templates/repos.php:28
+msgid "Refresh"
+msgstr ""
+
+#: templates/repos.php:54
+msgid "Add Repo"
 msgstr ""
