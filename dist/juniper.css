@@ -1,6 +1,9 @@
 .juniper textarea {
   width: 600px;
 }
+.juniper th.desc {
+  width: 60%;
+}
 .juniper .red {
   color: red;
 }
@@ -38,4 +41,14 @@
 }
 .juniper .setting p {
   max-width: 600px;
+}
+
+.release-inside {
+  padding-top: 10px;
+}
+.release-inside h5 {
+  font-size: 14pt;
+}
+.release-inside ul {
+  padding-left: 0px;
 }

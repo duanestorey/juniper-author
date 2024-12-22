@@ -54,7 +54,7 @@ class Settings {
                 'Options', 
                 __( 'Options', 'juniper' ),
                 array(
-                    $this->addSetting( 'password', 'github_token', __( 'Github Token', 'juniper' ) ),
+                    $this->addSetting( 'text', 'github_token', __( 'Github Token', 'juniper' ) ),
                 )
             );
 

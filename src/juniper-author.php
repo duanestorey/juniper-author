@@ -291,33 +291,20 @@ class JuniperAuthor extends GithubUpdater {
     }
 
     public function outputReleases( $params ) {
-        $data = [];
-
-        $releases = $this->settings->getReleases();
-        foreach( $releases as $repo => $releaseInfo ) {
-            $pluginData = new \stdClass;
-
-            $pluginData->info = $this->settings->getSetting( 'repositories' )[ $repo ];
-            $pluginData->info->slug = basename( $repo );
-            $pluginData->releases = [];
-
-            foreach( $releaseInfo as $oneRelease ) {
-                $pluginData->releases[] = $oneRelease;
-            }
-
-            $data[] = $pluginData;
-        }
-
-        return $data;
+        return $this->getRepositories();
     }   
 
-    public function getRepositories( $repoType = 'plugin' ) {
-        $repos = $this->settings->getSetting( 'repositories' );
+    public function getRepositories() {
+        return $this->settings->getSetting( 'repositories' );
+    }
+
+    public function getFilteredRepositories( $repoType = 'plugin' ) {
+        $repos = $this->getRepositories();
         if ( $repos ) {
             $foundRepos = [];
 
             foreach( $repos as $name => $info ) {
-                if ( $info->type == $repoType ) {
+                if ( $info->info->type == $repoType ) {
                     $foundRepos[] = $info;
                 }
             }
@@ -329,11 +316,11 @@ class JuniperAuthor extends GithubUpdater {
     }
 
     public function outputPlugins() {
-        return $this->getRepositories( 'plugin' );
+        return $this->getFilteredRepositories( 'plugin' );
     }
 
     public function outputThemes() {
-        return $this->getRepositories( 'theme' );
+        return $this->getFilteredRepositories( 'theme' );
     }
 
     public function setupRestApi() {
@@ -392,16 +379,83 @@ class JuniperAuthor extends GithubUpdater {
         $newRepoInfo = new \stdClass;
 
         $newRepoInfo->fullName = $repoInfo->full_name;
-        $newRepoInfo->ownerAvatarUrl = $repoInfo->owner->avatar_url;
-        $newRepoInfo->ownerUrl = $repoInfo->owner->html_url;
+
+        $newRepoInfo->owner = new \stdClass;
+        $newRepoInfo->owner->user = $repoInfo->owner->login;
+        $newRepoInfo->owner->avatarUrl = $repoInfo->owner->avatar_url;
+        $newRepoInfo->owner->ownerUrl = $repoInfo->owner->html_url;
+
         $newRepoInfo->repoUrl =  $repoInfo->html_url;
         $newRepoInfo->description = $repoInfo->description;
         $newRepoInfo->issuesUrl = $repoInfo->issues_url;
+        $newRepoInfo->openIssuesCount = $repoInfo->open_issues_count;
+        $newRepoInfo->forkCount = $repoInfo->forks; 
+
         $newRepoInfo->lastUpdatedAt = strtotime( $repoInfo->updated_at );
         $newRepoInfo->starsCount = $repoInfo->stargazers_count;
         $newRepoInfo->hasIssues = $repoInfo->has_issues;
 
         return $newRepoInfo;
+    }
+
+    public function parseRelevantIssueInfo( $issues ) {
+        $returnIssues  = [];
+
+        foreach( $issues as $num => $issue ) {
+            $newIssue = new \stdClass;
+            $newIssue->id = $issue->id;
+            $newIssue->url = $issue->html_url;
+            $newIssue->title = $issue->title;
+            $newIssue->state = $issue->state;
+            $newIssue->comments = $issue->comments;
+            $newIssue->updatedAt = strtotime( $issue->updated_at );
+            $newIssue->body = $issue->body;
+            $newIssue->timelineUrl = $issue->timeline_url;
+
+            $newIssue->postedBy = new \stdClass;
+            $newIssue->postedBy->user = $issue->user->login;
+            $newIssue->postedBy->avatarUrl = $issue->user->avatar_url;
+            $newIssue->postedBy->userUrl = $issue->user->html_url;
+
+            $returnIssues[] = $newIssue;
+        }
+
+        return $returnIssues;
+    }
+
+    public function parseRelevantReleaseInfo( $releases ) {
+        $returnReleases  = [];
+
+        foreach( $releases as $num => $release ) {
+            $newRelease = new \stdClass;
+            $newRelease->id = $release->id;
+            $newRelease->url = $release->html_url;
+            $newRelease->tag = $release->tag_name;
+            $newRelease->signed = false;
+
+            $newRelease->name = $release->name;
+            $newRelease->body = $release->body;
+
+            $newRelease->publishedAt = strtotime( $release->published_at );
+            $newRelease->downloadUrl = '';
+            $newRelease->downloadSize = 0;
+            $newRelease->downloadCount = 0;
+
+            if ( !empty( $release->assets[ 0 ] ) ) {
+                $newRelease->downloadUrl = $release->assets[ 0 ]->browser_download_url;
+                $newRelease->downloadSize = $release->assets[ 0 ]->size;
+                $newRelease->downloadCount = $release->assets[ 0 ]->download_count;
+            }
+
+            $newRelease->postedBy = new \stdClass;
+            $newRelease->postedBy->user = $release->author->login;
+            $newRelease->postedBy->avatarUrl = $release->author->avatar_url;
+            $newRelease->postedBy->userUrl = $release->author->html_url;
+
+            $returnReleases[] = $newRelease;
+        }
+
+        return $returnReleases;
     }
 
     public function refreshRepositories() {
@@ -452,8 +506,8 @@ class JuniperAuthor extends GithubUpdater {
                 }
 
                 $oneClass = new \stdClass;
-                $oneClass->type = 'plugin';
-                $oneClass->pluginInfo = $pluginInfo;
+                $oneClass->info = $pluginInfo;
+                $oneClass->repository = $this->parseRelevantRepoInfo( $oneResult );
 
                 // get issues
                 $issuesUrl = 'https://api.github.com/repos/' . $oneResult->full_name . '/issues?state=all';
@@ -463,14 +517,21 @@ class JuniperAuthor extends GithubUpdater {
                 if ( $issues ) {
                     $decodedIssues = json_decode( $issues );
 
-                    $oneClass->issues = $decodedIssues;
+                    $oneClass->issues = $this->parseRelevantIssueInfo( $decodedIssues );
                 }
 
-                $repoInfoUrl = 'https://api.github.com/repos/' . $oneResult->full_name;
+                // get releases
+                $releasesUrl = 'https://api.github.com/repos/' . $oneResult->full_name . '/releases';
 
-                $oneClass->repoInfo = $this->parseRelevantRepoInfo( $oneResult );
+                $oneClass->releases = [];
+                $releases = $this->utils->curlGitHubRequest( $releasesUrl );
+                if ( $releases ) {
+                    $decodedReleases = json_decode( $releases );
 
-                $repos[ $oneResult->html_url ] = $oneClass;
+                    $oneClass->releases = $this->parseRelevantReleaseInfo( $decodedReleases );
+                }
+
+                $repos[] = $oneClass;
             }
 
             $this->settings->setSetting( 'repositories', $repos );

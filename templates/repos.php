@@ -19,10 +19,10 @@
             
         <?php foreach( $this->getSetting( 'repositories' ) as $name => $data ) { ?>
             <tr>
-                <td><a href="<?php echo esc_attr( $data->repoInfo->repoUrl ); ?>" target="_blank"><?php echo esc_html( $data->pluginInfo->pluginName ); ?></a</td>
-                <td><?php echo esc_html( strtoupper( $data->type ) ); ?></td>
-                <td><?php echo esc_html( $data->repoInfo->description ); ?></td>
-                <td><?php echo esc_html( $data->pluginInfo->stableVersion ); ?></td>
+                <td><a href="<?php echo esc_attr( $data->repository->repoUrl ); ?>" target="_blank"><?php echo esc_html( $data->info->pluginName ); ?></a</td>
+                <td><?php echo esc_html( strtoupper( $data->info->type ) ); ?></td>
+                <td><?php echo esc_html( $data->repository->description ); ?></td>
+                <td><?php echo esc_html( $data->info->stableVersion ); ?></td>
                 <td><?php echo esc_html( count( $data->issues ) ); ?></td>
             </tr>
         <?php }?> 
@@ -49,7 +49,6 @@
                 <?php }?> 
             </tbody>
         </table>
-        <input type="submit" id="submit" class="button button-primary" name="submit" value="<?php esc_attr_e( 'Add Repo', 'juniper' ); ?>" />
         <a href="admin.php?page=juniper-repos&juniper_action=refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="button button-secondary" />Refresh</a>
     </form>
 </div>
