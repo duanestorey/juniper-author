@@ -12,21 +12,18 @@
                 <th><?php _e( 'Type', 'juniper' ); ?></th>
                 <th><?php _e( 'URL', 'juniper' ); ?></th>
                 <th><?php _e( 'Latest', 'juniper' ); ?></th>
-                <th><?php _e( 'Actions', 'juniper' ); ?></th>
+                <th><?php _e( 'Issues', 'juniper' ); ?></th>
             </tr>
         </thead>
         <tbody>
             
         <?php foreach( $this->getSetting( 'repositories' ) as $name => $data ) { ?>
             <tr>
-                <td><?php echo esc_html( $data->pluginName ); ?></td>
+                <td><?php echo esc_html( $data->pluginInfo->pluginName ); ?></td>
                 <td><?php echo esc_html( $data->type ); ?></td>
                 <td><?php echo esc_html( $name ); ?></td>
-                <td><?php echo esc_html( $data->stableVersion ); ?></td>
-                <td>
-                    <a href="<?php echo admin_url( 'admin.php?page=juniper-repos&juniper_nonce=' . wp_create_nonce( 'juniper' ) . '&juniper_remove_repo=' . $name ); ?>"><?php _e( 'Remove', 'juniper' ); ?> | 
-                    <a href="<?php echo admin_url( 'admin.php?page=juniper-repos&juniper_nonce=' . wp_create_nonce( 'juniper' ) . '&juniper_refresh_repo=' . $name ); ?>"><?php _e( 'Refresh', 'juniper' ); ?>
-                </td>
+                <td><?php echo esc_html( $data->pluginInfo->stableVersion ); ?></td>
+                <td><?php echo esc_html( count( $data->issues ) ); ?></td>
             </tr>
         <?php }?> 
         </tbody>
@@ -52,5 +49,6 @@
             </tbody>
         </table>
         <input type="submit" id="submit" class="button button-primary" name="submit" value="<?php esc_attr_e( 'Add Repo', 'juniper' ); ?>" />
+        <a href="admin.php?page=juniper-repos&juniper_action=refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="button button-secondary" />Refresh</a>
     </form>
 </div>

@@ -5,7 +5,7 @@
     terms of the GPLv3 license.
  */
 
-namespace NOTWPORG\JuniperAuthor;
+namespace DuaneStorey\JuniperAuthor;
 
 use phpseclib3\Crypt\PublicKeyLoader;
 
@@ -14,17 +14,20 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/utils.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/github-updater.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/settings.php' );
+require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/wordpress.php' );
 
 class JuniperAuthor extends GithubUpdater {
-
     private static $instance = null;
 
     protected $settings = null;
+    protected $utils = null;
 
     protected function __construct() {
         $this->settings = new Settings();;
+        $this->utils = new Utils( $this->settings );
 
         // Plugin action links
         add_filter( 'plugin_action_links_' . plugin_basename( JUNIPER_AUTHOR_MAIN_FILE ), array( $this, 'add_action_links' ) );
@@ -47,7 +50,7 @@ class JuniperAuthor extends GithubUpdater {
     public function init() {
         $this->settings->init();
 
-        $this->lookForReleases();
+       // $this->lookForReleases();
     }
 
     protected function testPrivateKey( $passPhrase ) {
@@ -138,7 +141,6 @@ class JuniperAuthor extends GithubUpdater {
         } catch ( \phpseclib3\Exception $e ) {
         
         }
-        
     }
 
     public function verifyPackage( $package ) {
@@ -219,34 +221,8 @@ class JuniperAuthor extends GithubUpdater {
         wp_die();
     }
 
-    public function curlExists( $url ) {
-        $ch = curl_init($url);
-        
-        curl_setopt($ch, CURLOPT_NOBODY, true);
-        curl_exec($ch);
-        $retcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return ( $retcode == 200 );
-    }
-
-    public function curlGet( $url ) {
-        $ch = curl_init();
-        curl_setopt( $ch, CURLOPT_URL, $url );
-        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $ch, CURLOPT_TIMEOUT, 10000 );
-
-        $headers[] = 'Authorization: Bearer ';
-        $headers[] = 'X-GitHub-Api-Version: 2022-11-28';
-
-        curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
-        curl_setopt( $ch, CURLOPT_USERAGENT, 'Juniper/Author' );
-        $response = curl_exec( $ch );
-
-        return $response;
-    }
-
     public function lookForReleases() {
+        /*
         if ( time() > $this->settings->getSetting( 'next_release_time' ) ) {
             // update all repos
             $repos = $this->settings->getSetting( 'repositories' );
@@ -264,8 +240,7 @@ class JuniperAuthor extends GithubUpdater {
                 foreach( $repos as $url => $repoData ) {
                     $repoUrl = str_replace( 'https://github.com/', 'https://api.github.com/repos/', $url . '/releases' );
 
-                    $info = $this->curlGet( $repoUrl );
-                    
+                    $info = $this->utils->curlGitHubRequest( $repoUrl );
 
                     if ( $info) {
                         $info = json_decode( $info );
@@ -285,6 +260,7 @@ class JuniperAuthor extends GithubUpdater {
             $this->settings->setSetting( 'next_release_time', time() + 5*60 );
             $this->settings->saveSettings();
         }
+        */
     }
 
     public function getPublicKey() {
@@ -335,6 +311,31 @@ class JuniperAuthor extends GithubUpdater {
         return $data;
     }   
 
+    public function getRepositories( $repoType = 'plugin' ) {
+        $repos = $this->settings->getSetting( 'repositories' );
+        if ( $repos ) {
+            $foundRepos = [];
+
+            foreach( $repos as $name => $info ) {
+                if ( $info->type == $repoType ) {
+                    $foundRepos[] = $info;
+                }
+            }
+
+            return $foundRepos;
+        }
+
+        return [];
+    }
+
+    public function outputPlugins() {
+        return $this->getRepositories( 'plugin' );
+    }
+
+    public function outputThemes() {
+        return $this->getRepositories( 'theme' );
+    }
+
     public function setupRestApi() {
         register_rest_route( 
             'juniper/v1', '/public_key/', 
@@ -349,6 +350,22 @@ class JuniperAuthor extends GithubUpdater {
             array(
                 'methods' => 'GET',
                 'callback' => array( $this, 'outputReleases' ),
+            ) 
+        );
+
+        register_rest_route( 
+            'juniper/v1', '/plugins/', 
+            array(
+                'methods' => 'GET',
+                'callback' => array( $this, 'outputPlugins' ),
+            ) 
+        );
+
+        register_rest_route( 
+            'juniper/v1', '/themes/', 
+            array(
+                'methods' => 'GET',
+                'callback' => array( $this, 'outputThemes' ),
             ) 
         );
     }
@@ -369,6 +386,144 @@ class JuniperAuthor extends GithubUpdater {
                 wp_localize_script( 'juniper-author','Juniper', $data );
             }
         }
+    }
+
+    public function parseRelevantRepoInfo( $repoInfo ) {
+        $newRepoInfo = new \stdClass;
+
+        $newRepoInfo->fullName = $repoInfo->full_name;
+        $newRepoInfo->ownerAvatarUrl = $repoInfo->owner->avatar_url;
+        $newRepoInfo->ownerUrl = $repoInfo->owner->html_url;
+        $newRepoInfo->repoUrl =  $repoInfo->html_url;
+        $newRepoInfo->description = $repoInfo->description;
+        $newRepoInfo->issuesUrl = $repoInfo->issues_url;
+        $newRepoInfo->lastUpdatedAt = strtotime( $repoInfo->updated_at );
+        $newRepoInfo->starsCount = $repoInfo->stargazers_count;
+        $newRepoInfo->hasIssues = $repoInfo->has_issues;
+
+        return $newRepoInfo;
+    }
+
+    public function refreshRepositories() {
+        $orgInfo = 'https://api.github.com/user/repos';
+        $result = $this->utils->curlGitHubRequest( $orgInfo );
+    
+        if ( $result ) {
+            $decodedResult = json_decode( $result );
+            $repos = [];
+
+            foreach( $decodedResult as $oneResult ) {
+                // Skip private repos for now since we are using authenticated requests
+                if ( $oneResult->private ) {
+                    continue;
+                }
+
+                $possiblePluginFile = 'https://raw.githubusercontent.com/' . $oneResult->full_name . '/refs/heads/main/' . basename( $oneResult->full_name ) . '.php';
+                if ( !$this->utils->curlRemoteFileExists( $possiblePluginFile ) ) {
+                    continue;
+                }
+
+                $pluginFile = $this->utils->curlGitHubRequest( $possiblePluginFile );
+
+                $wordPress = new WordPress( $this->utils );
+                
+                $pluginInfo = $wordPress->parseReadmeHeader( $pluginFile );
+
+                $pluginInfo->bannerImage = '';
+                $pluginInfo->bannerImageLarge = '';
+
+                $testBannerImage = 'https://raw.githubusercontent.com/' . $oneResult->full_name . '/refs/heads/main/assets/banner-1544x500.jpg';
+                if ( $this->utils->curlRemoteFileExists( $testBannerImage ) ) {
+                    $pluginInfo->bannerImageLarge = $testBannerImage;
+                    $pluginInfo->bannerImage = $testBannerImage;
+                }
+
+                $pluginInfo->readme = '';
+                $pluginInfo->readmeHtml = '';
+
+                $readmeFile = 'https://raw.githubusercontent.com/' . $oneResult->full_name . '/refs/heads/main/README.md';
+
+                if ( $this->utils->curlRemoteFileExists( $readmeFile ) ) {
+                    require_once( JUNIPER_AUTHOR_PATH . '/vendor/autoload.php' );
+
+                    $parsedown = new \Parsedown();
+                    $pluginInfo->readme = $this->utils->curlGitHubRequest( $readmeFile );
+                    $pluginInfo->readmeHtml = $parsedown->text( $pluginInfo->readme );
+                }
+
+                $oneClass = new \stdClass;
+                $oneClass->type = 'plugin';
+                $oneClass->pluginInfo = $pluginInfo;
+
+                // get issues
+                $issuesUrl = 'https://api.github.com/repos/' . $oneResult->full_name . '/issues?state=all';
+
+                $oneClass->issues = [];
+                $issues = $this->utils->curlGitHubRequest( $issuesUrl );
+                if ( $issues ) {
+                    $decodedIssues = json_decode( $issues );
+
+                    $oneClass->issues = $decodedIssues;
+                }
+
+                $repoInfoUrl = 'https://api.github.com/repos/' . $oneResult->full_name;
+
+                $oneClass->repoInfo = $this->parseRelevantRepoInfo( $oneResult );
+
+                $repos[ $oneResult->html_url ] = $oneClass;
+            }
+
+            $this->settings->setSetting( 'repositories', $repos );
+            $this->settings->saveSettings();
+
+            header( 'Location: ' . admin_url( 'admin.php?page=juniper-repos' ) );
+            die;
+        }    
+    }
+
+    public function getReleases() {
+        $releases = [];
+
+        if ( !empty( $this->settings->releases ) ) {
+            foreach( $this->settings->releases as $repo => $releaseInfo ) {
+                $releases[ $repo ] = [];
+
+                foreach( $releaseInfo as $oneRelease ) {
+                    $release = new \stdClass;
+
+                    $release->tagName = $oneRelease->tag_name;
+                    $release->name = $oneRelease->name;
+                    $release->description = $oneRelease->body;
+                    $release->publishedDate = strtotime( $oneRelease->published_at );
+
+                    $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $oneRelease->tag_name;
+                    
+                    $release->signed = false;
+
+                    if ( !empty( $oneRelease->assets[0]->browser_download_url ) ) {
+                        $signedZip = $releasePath . '/' . str_replace( '.zip', '.signed.zip', basename( $oneRelease->assets[0]->browser_download_url ) );
+                        $release->signed = file_exists( $signedZip );
+                    }
+                    
+                    $release->package = '';
+
+                    if ( $release->signed ) {
+                        $release->package = $signedZip;
+                        
+                    } else {
+                        if ( !empty( $oneRelease->assets[0]->browser_download_url ) ) {
+                            $release->package = $oneRelease->assets[0]->browser_download_url;
+                        }
+                    }
+
+                    $release->package_url = plugins_url( basename( $repo ) . '/' . $oneRelease->tag_name . '/' . basename( $release->package ), JUNIPER_AUTHOR_MAIN_FILE );
+                    
+                    $releases[ $repo ][] = $release;
+                }
+            }
+        }   
+
+        return $releases;
     }
 
     public function handleRepoLinks() {
@@ -409,6 +564,12 @@ class JuniperAuthor extends GithubUpdater {
                 }
                 
                 die;   
+            } else if ( !empty( $_GET[ 'juniper_action' ] ) ) {
+                if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
+                    if ( $_GET[ 'juniper_action' ] == 'refresh' ) {
+                        $this->refreshRepositories();
+                    }
+                }
             }
         }
     }

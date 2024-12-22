@@ -5,7 +5,12 @@
     terms of the GPLv3 license.
  */
 
-namespace NOTWPORG\JuniperAuthor;
+namespace DuaneStorey\JuniperAuthor;
+
+// Prevent direct access
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
 
 class GitHubUpdater {
     private const CACHE_TIME = ( 60 * 5 ); // 15 minutes

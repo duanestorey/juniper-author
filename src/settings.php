@@ -5,7 +5,7 @@
     terms of the GPLv3 license.
  */
 
-namespace NOTWPORG\JuniperAuthor;
+namespace DuaneStorey\JuniperAuthor;
 
 use phpseclib3\Crypt\EC;
 use phpseclib3\Crypt\RSA;
@@ -30,23 +30,12 @@ class Settings {
     }
     
     public function init() {
-        //delete_option( Settings::SETTING_KEY );
         if ( is_admin() ) {
-            
-
             add_action( 'admin_menu', array( $this, 'setupSettingsPage' ) );
 
             $this->processSubmittedSettings();
 
-             $this->settingsPages[ 'repos' ] = [];
-             $this->addSettingsSection( 
-                $this->settingsPages[ 'repos' ],
-                'Add New', 
-                __( 'Add New Repository', 'juniper' ),
-                array(
-                        $this->addSetting( 'text', 'new_repo_name', __( 'Enter Github Repository URL', 'juniper' ) ),
-                )
-            );
+            $this->settingsPages[ 'repos' ] = [];
 
             $this->settingsPages[ 'options' ] = [];
             $this->addSettingsSection( 
@@ -56,8 +45,16 @@ class Settings {
                 array(
                         $this->addSetting( 'textarea', 'private_key', __( 'Private Key', 'juniper' ) ),
                         $this->addSetting( 'textarea', 'public_key', __( 'Public Key', 'juniper' ) ),
-                        $this->addSetting( 'txtrecord', 'public_key', __( 'Update TXT records' ) ),
                         $this->addSetting( 'checkbox', 'reset_key', __( 'Delete keys (this is destructive, for testing only)', 'juniper' ) ),
+                )
+            );
+
+            $this->addSettingsSection( 
+                $this->settingsPages[ 'options' ],
+                'Options', 
+                __( 'Options', 'juniper' ),
+                array(
+                        $this->addSetting( 'text', 'github_token', __( 'Github Token', 'juniper' ) ),
                 )
             );
         }
@@ -77,51 +74,6 @@ class Settings {
         } else {
             return false;
         }
-    }
-
-    public function getReleases() {
-        $releases = [];
-
-        if ( !empty( $this->settings->releases ) ) {
-            foreach( $this->settings->releases as $repo => $releaseInfo ) {
-                $releases[ $repo ] = [];
-
-                foreach( $releaseInfo as $oneRelease ) {
-                    $release = new \stdClass;
-
-                    $release->tagName = $oneRelease->tag_name;
-                    $release->name = $oneRelease->name;
-                    $release->description = $oneRelease->body;
-                    $release->publishedDate = strtotime( $oneRelease->published_at );
-
-                    $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $oneRelease->tag_name;
-                    
-                    $release->signed = false;
-
-                    if ( !empty( $oneRelease->assets[0]->browser_download_url ) ) {
-                        $signedZip = $releasePath . '/' . str_replace( '.zip', '.signed.zip', basename( $oneRelease->assets[0]->browser_download_url ) );
-                        $release->signed = file_exists( $signedZip );
-                    }
-                    
-                    $release->package = '';
-
-                    if ( $release->signed ) {
-                        $release->package = $signedZip;
-                        
-                    } else {
-                        if ( !empty( $oneRelease->assets[0]->browser_download_url ) ) {
-                            $release->package = $oneRelease->assets[0]->browser_download_url;
-                        }
-                    }
-
-                    $release->package_url = plugins_url( basename( $repo ) . '/' . $oneRelease->tag_name . '/' . basename( $release->package ), JUNIPER_AUTHOR_MAIN_FILE );
-                    
-                    $releases[ $repo ][] = $release;
-                }
-            }
-        }   
-
-        return $releases;
     }
 
     public function processSubmittedSettings() {
@@ -179,140 +131,6 @@ class Settings {
                     $this->saveSettings();
                 }
             }
-        }
-    }
-
-    public function curlExists( $url ) {
-        $ch = curl_init($url);
-        
-        curl_setopt($ch, CURLOPT_NOBODY, true);
-        curl_exec($ch);
-        $retcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return ( $retcode == 200 );
-    }
-
-    public function curlGet( $url ) {
-        $ch = curl_init();
-        curl_setopt( $ch, CURLOPT_URL, $url );
-        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt ($ch,CURLOPT_TIMEOUT, 10000);
-
-        $headers[] = 'Authorization: Bearer ';
-        $headers[] = 'X-GitHub-Api-Version: 2022-11-28';
-
-        curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
-        curl_setopt( $ch, CURLOPT_USERAGENT, 'Juniper/Author' );
-
-        $response = curl_exec( $ch );
-
-        return $response;
-    }
-
-    protected function getRepoInfo( $repoUrl ) {
-        if ( strpos( $repoUrl, 'https://github.com') !== false ) {
-            // github URL
-            $phpFile = basename( $repoUrl ) . '.php';
-
-            $parsed = parse_url( $repoUrl );
-            $path = str_replace( '.git', '', $parsed[ 'path' ] );
-            $url = 'https://raw.githubusercontent.com/' . $path . '/refs/heads/main/' . $phpFile;
-            $readmeUrl = 'https://raw.githubusercontent.com/' . $path . '/refs/heads/main/README.md';
-
-            $contents = file_get_contents( $url );
-            if ( $contents ) {
-                $headers = [];
-                if ( preg_match_all( '/(.*): (.*)/', $contents, $matches ) ) {
-                    foreach( $matches[ 1 ] as $key => $value ) {
-                        $headers[ strtolower( trim( str_replace( ' * ', '', $value ) ) ) ] = trim( $matches[ 2 ][ $key ] );
-                    }
-                    
-                    $repoInfo = new \stdClass;
-                    $repoInfo->type = 'plugin';
-                    $repoInfo->bannerImage = '';
-                    $repoInfo->bannerImageLarge = '';
-                    $repoInfo->requiresPHP = '';
-                    $repoInfo->authorUrl = '';
-                    $repoInfo->testedUpTo = '';
-                    $repoInfo->signingAuthority = '';
-                    $repoInfo->requiresAtLeast = '';
-                    $repoInfo->readme = file_get_contents( $readmeUrl );
-                    $repoInfo->readmeHtml = '';
-
-                    if ( $repoInfo->readme ) {
-                        require_once( JUNIPER_AUTHOR_PATH . '/vendor/autoload.php' );
-
-                        $parsedown = new \Parsedown();
-                        $repoInfo->readmeHtml = $parsedown->text( $repoInfo->readme );
-                    }
-
-                    $testBannerImage = 'https://raw.githubusercontent.com' . $path . '/refs/heads/main/assets/banner-1544x500.jpg';
-                    //      https://github.com/wp-privacy/wp-api-privacy/raw/refs/heads/main/assets/banner-772x250.jpg
-                    //      https://raw.githubusercontent.com/wp-privacy/wp-api-privacy/refs/heads/main/assets/banner-772x250.jpg
-
-                    $mapping = array(
-                        'plugin name' => 'pluginName',
-                        'stable' => 'stableVersion',
-                        'version' => 'version',
-                        'description' => 'description',
-                        'author' => 'author',
-                        'author uri' => 'authorUrl',
-                        'requires php' => 'requiresPHP',
-                        'requires at least' => 'requiresAtLeast',
-                        'tested up to' => 'testedUpTo',
-                        'signing authority' => 'signingAuthority'
-                    );
-
-                    foreach( $mapping as $key => $value ) {
-                        if ( isset( $headers[ $key ] ) ) {
-                            $repoInfo->$value = $headers[ $key ];
-                        }
-                    } 
-
-                    if ( $this->curlExists( $testBannerImage ) ) {
-                        $repoInfo->bannerImage = $testBannerImage;
-                    }
-
-                    if ( empty( $repoInfo->stableVersion ) ) {
-                        $repoInfo->stableVersion = $repoInfo->version;
-                    }
-
-                    $issuesUrl = str_replace( 'https://github.com/', 'https://api.github.com/repos/', $repoUrl . '/issues' );
-
-                    $repoInfo->issues = [];
-                    $issues = $this->curlGet( $issuesUrl );
-                    if ( $issues ) {
-                        $decodedIssues = json_decode( $issues );
-
-                        $repoInfo->issues = $decodedIssues;
-                    }
-
-                    $repoInfoUrl = str_replace( 'https://github.com/', 'https://api.github.com/repos/', $repoUrl );
-
-                    $repoInfo->repoInfo = [];
-                    $repositoryData = $this->curlGet( $repoInfoUrl );
-
-                    if ( $repositoryData ) {
-                        $decodedRepositoryData = json_decode( $repositoryData );
-
-                        $repoInfo->repoInfo = $decodedRepositoryData;
-                    }
-
-
-                    return $repoInfo;
-                }
-            }
-        }
-
-        return false;
-    }   
-
-    public function mayebAddRepo( $repoUrl ) {
-        $repoInfo = $this->getRepoInfo( $repoUrl );
-
-        if ( $repoInfo ) {
-                $this->settings->repositories[ $repoUrl ] = $repoInfo;
         }
     }
 
@@ -419,6 +237,7 @@ class Settings {
         $settings->new_repo_name = false;
 
         $settings->repositories = [];
+        $settings->github_token = false;
 
         $settings->next_release_time = 0;
         $settings->releases = [];
