@@ -220,7 +220,7 @@ class JuniperAuthor extends GithubUpdater {
     }
 
     public function lookForReleases() {
-        if ( true || time() > $this->settings->getSetting( 'next_release_time' ) ) {
+        if ( time() > $this->settings->getSetting( 'next_release_time' ) ) {
             // update all repos
             $repos = $this->settings->getSetting( 'repositories' );
             $this->settings->setSetting( 'reposistories', [] );
@@ -292,7 +292,7 @@ class JuniperAuthor extends GithubUpdater {
             $pluginData = new \stdClass;
 
             $pluginData->info = $this->settings->getSetting( 'repositories' )[ $repo ];
-            $pluginData->slug = basename( $repo );
+            $pluginData->info->slug = basename( $repo );
             $pluginData->releases = [];
 
             foreach( $releaseInfo as $oneRelease ) {

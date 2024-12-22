@@ -22,7 +22,7 @@
                 <td><?php echo esc_html( $data->pluginName ); ?></td>
                 <td><?php echo esc_html( $data->type ); ?></td>
                 <td><?php echo esc_html( $name ); ?></td>
-                <td><?php echo esc_html( $data->stable ); ?></td>
+                <td><?php echo esc_html( $data->stableVersion ); ?></td>
                 <td>
                     <a href="<?php echo admin_url( 'admin.php?page=juniper-repos&juniper_nonce=' . wp_create_nonce( 'juniper' ) . '&juniper_remove_repo=' . $name ); ?>"><?php _e( 'Remove', 'juniper' ); ?> | 
                     <a href="<?php echo admin_url( 'admin.php?page=juniper-repos&juniper_nonce=' . wp_create_nonce( 'juniper' ) . '&juniper_refresh_repo=' . $name ); ?>"><?php _e( 'Refresh', 'juniper' ); ?>

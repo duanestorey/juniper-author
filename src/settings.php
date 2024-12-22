@@ -182,6 +182,16 @@ class Settings {
         }
     }
 
+    public function curlGet( $url ) {
+        $ch = curl_init();
+        curl_setopt( $ch, CURLOPT_URL, $url );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_USERAGENT, "Juniper/Author" );
+        $response = curl_exec( $ch );
+
+        return $response;
+    }
+
     protected function getRepoInfo( $repoUrl ) {
         if ( strpos( $repoUrl, 'https://github.com') !== false ) {
             // github URL
@@ -197,12 +207,17 @@ class Settings {
                 $headers = [];
                 if ( preg_match_all( '/(.*): (.*)/', $contents, $matches ) ) {
                     foreach( $matches[ 1 ] as $key => $value ) {
-                        $headers[ strtolower( trim( $value ) ) ] = trim( $matches[ 2 ][ $key ] );
+                        $headers[ strtolower( trim( str_replace( ' * ', '', $value ) ) ) ] = trim( $matches[ 2 ][ $key ] );
                     }
                     
                     $repoInfo = new \stdClass;
                     $repoInfo->type = 'plugin';
                     $repoInfo->bannerImage = '';
+                    $repoInfo->requiresPHP = '';
+                    $repoInfo->authorUrl = '';
+                    $repoInfo->testedUpTo = '';
+                    $repoInfo->signingAuthority = '';
+                    $repoInfo->requiresAtLeast = '';
 
                     $mapping = array(
                         'plugin name' => 'pluginName',
@@ -226,6 +241,32 @@ class Settings {
                     if ( file_exists( $bannerImage ) ) {
                         $repoInfo->bannerImage = $bannerImage;
                     }
+
+                    if ( empty( $repoInfo->stableVersion ) ) {
+                        $repoInfo->stableVersion = $repoInfo->version;
+                    }
+
+                    $issuesUrl = str_replace( 'https://github.com/', 'https://api.github.com/repos/', $repoUrl . '/issues' );
+
+                    $repoInfo->issues = [];
+                    $issues = $this->curlGet( $issuesUrl );
+                    if ( $issues ) {
+                        $decodedIssues = json_decode( $issues );
+
+                        $repoInfo->issues = $decodedIssues;
+                    }
+
+                    $repoInfoUrl = str_replace( 'https://github.com/', 'https://api.github.com/repos/', $repoUrl );
+
+                    $repoInfo->repoInfo = [];
+                    $repositoryData = $this->curlGet( $repoInfoUrl );
+
+                    if ( $repositoryData ) {
+                        $decodedRepositoryData = json_decode( $repositoryData );
+
+                        $repoInfo->repoInfo = $decodedRepositoryData;
+                    }
+
 
                     return $repoInfo;
                 }
