@@ -26,32 +26,32 @@ class Utils {
     }
 
     public function curlRequest( $url, $headers = false ) {
-        $ch = curl_init();
-        curl_setopt( $ch, CURLOPT_URL, $url );
-        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
-        curl_setopt( $ch, CURLOPT_TIMEOUT, 10000 );
+        $ch = \curl_init();
+        \curl_setopt( $ch, CURLOPT_URL, $url );
+        \curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        \curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
+        \curl_setopt( $ch, CURLOPT_TIMEOUT, 10000 );
 
         if ( $headers ) {
-            curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
+            \curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
         }
         
-        curl_setopt( $ch, CURLOPT_USERAGENT, Utils::USER_AGENT );
-        $response = curl_exec( $ch );
+        \curl_setopt( $ch, CURLOPT_USERAGENT, Utils::USER_AGENT );
+        $response = \curl_exec( $ch );
         
         return $response;
     }
 
     public function curlRemoteFileExists( $url ) {
-        $ch = curl_init($url);
+        $ch = \curl_init($url);
         
-        curl_setopt( $ch, CURLOPT_NOBODY, true );
-        curl_setopt( $ch, CURLOPT_TIMEOUT, 2500 );
-        curl_setopt( $ch, CURLOPT_USERAGENT, Utils::USER_AGENT );
-        curl_exec( $ch );
+        \curl_setopt( $ch, CURLOPT_NOBODY, true );
+        \curl_setopt( $ch, CURLOPT_TIMEOUT, 2500 );
+        \curl_setopt( $ch, CURLOPT_USERAGENT, Utils::USER_AGENT );
+        \curl_exec( $ch );
 
-        $retcode = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
-        curl_close( $ch );
+        $retcode = \curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+        \curl_close( $ch );
 
         return ( $retcode == 200 );
     }
