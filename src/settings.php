@@ -54,7 +54,16 @@ class Settings {
                 'Options', 
                 __( 'Options', 'juniper' ),
                 array(
-                        $this->addSetting( 'text', 'github_token', __( 'Github Token', 'juniper' ) ),
+                    $this->addSetting( 'password', 'github_token', __( 'Github Token', 'juniper' ) ),
+                )
+            );
+
+            $this->addSettingsSection( 
+                $this->settingsPages[ 'options' ],
+                'Nuclear', 
+                __( 'Scorched Earth Nuclear', 'juniper' ),
+                array(
+                    $this->addSetting( 'checkbox', 'reset_settings', __( 'Delete all settings and restore defaults (this is destructive, use with care)', 'juniper' ) ),
                 )
             );
         }
@@ -105,11 +114,9 @@ class Settings {
                     $this->settings->public_key = null;
                     $this->settings->reset_key = false;
                     $this->saveSettings();
-                } else if ( !empty( $this->settings->new_repo_name ) ) {
-                    $this->mayebAddRepo( $this->settings->new_repo_name );
-
-                    $this->settings->new_repo_name = false;
-                    $this->saveSettings();
+                } else if ( $this->settings->reset_settings ) {
+                    $this->deleteAllOptions();
+                    $this->settings = false;
                 } else {
                     $this->saveSettings();
                 } 
@@ -203,6 +210,12 @@ class Settings {
                 echo esc_html( $currentSetting );
                 echo '</textarea>';
                 break;
+            case 'password':
+                $currentSetting = $this->getSetting( $setting->name );
+                echo '<input type="password" name="wpsetting_' . esc_attr( $setting->name ) . '" value="' . esc_attr( $currentSetting ) . '" /> ';
+                echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '">' . esc_html( $setting->desc ) . '</label><br/>';
+                break;
+                break;
             case 'text':
                 $currentSetting = $this->getSetting( $setting->name );
                 echo '<input type="text" name="wpsetting_' . esc_attr( $setting->name ) . '" value="' . esc_attr( $currentSetting ) . '" />';
@@ -239,6 +252,8 @@ class Settings {
         $settings->repositories = [];
         $settings->github_token = false;
 
+        $settings->reset_settings = false;
+
         $settings->next_release_time = 0;
         $settings->releases = [];
 
@@ -258,7 +273,6 @@ class Settings {
     }
 
     public function setupSettingsPage() {
-    
         add_menu_page( 
             'Juniper',
             'Juniper',
@@ -301,8 +315,8 @@ class Settings {
     }
 
     static function deleteAllOptions() {
-        delete_option( NOTWPORG\Juniper\Settings::SETTING_KEY );
-        delete_option( NOTWPORG\Juniper\Settings::UPDATED_KEY );
-        delete_option( NOTWPORG\Juniper\Settings::ERROR_KEY );   
+        delete_option( Settings::SETTING_KEY );
+        delete_option( Settings::UPDATED_KEY );
+        delete_option( Settings::ERROR_KEY );   
     }
 }

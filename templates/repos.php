@@ -10,7 +10,7 @@
             <tr>
                 <th><?php _e( 'Name', 'juniper' ); ?></th>
                 <th><?php _e( 'Type', 'juniper' ); ?></th>
-                <th><?php _e( 'URL', 'juniper' ); ?></th>
+                <th class="desc"><?php _e( 'Description', 'juniper' ); ?></th>
                 <th><?php _e( 'Latest', 'juniper' ); ?></th>
                 <th><?php _e( 'Issues', 'juniper' ); ?></th>
             </tr>
@@ -19,15 +19,16 @@
             
         <?php foreach( $this->getSetting( 'repositories' ) as $name => $data ) { ?>
             <tr>
-                <td><?php echo esc_html( $data->pluginInfo->pluginName ); ?></td>
-                <td><?php echo esc_html( $data->type ); ?></td>
-                <td><?php echo esc_html( $name ); ?></td>
+                <td><a href="<?php echo esc_attr( $data->repoInfo->repoUrl ); ?>" target="_blank"><?php echo esc_html( $data->pluginInfo->pluginName ); ?></a</td>
+                <td><?php echo esc_html( strtoupper( $data->type ) ); ?></td>
+                <td><?php echo esc_html( $data->repoInfo->description ); ?></td>
                 <td><?php echo esc_html( $data->pluginInfo->stableVersion ); ?></td>
                 <td><?php echo esc_html( count( $data->issues ) ); ?></td>
             </tr>
         <?php }?> 
         </tbody>
     </table>
+    <br />
 
     <form method="post" action="admin.php?page=juniper-repos"> 
         <input type="hidden" name="juniper_author_settings" value="1">
