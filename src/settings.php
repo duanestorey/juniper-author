@@ -182,11 +182,29 @@ class Settings {
         }
     }
 
+    public function curlExists( $url ) {
+        $ch = curl_init($url);
+        
+        curl_setopt($ch, CURLOPT_NOBODY, true);
+        curl_exec($ch);
+        $retcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return ( $retcode == 200 );
+    }
+
     public function curlGet( $url ) {
         $ch = curl_init();
         curl_setopt( $ch, CURLOPT_URL, $url );
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $ch, CURLOPT_USERAGENT, "Juniper/Author" );
+        curl_setopt ($ch,CURLOPT_TIMEOUT, 10000);
+
+        $headers[] = 'Authorization: Bearer ';
+        $headers[] = 'X-GitHub-Api-Version: 2022-11-28';
+
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
+        curl_setopt( $ch, CURLOPT_USERAGENT, 'Juniper/Author' );
+
         $response = curl_exec( $ch );
 
         return $response;
@@ -200,7 +218,7 @@ class Settings {
             $parsed = parse_url( $repoUrl );
             $path = str_replace( '.git', '', $parsed[ 'path' ] );
             $url = 'https://raw.githubusercontent.com/' . $path . '/refs/heads/main/' . $phpFile;
-            $bannerImage = 'https://github.com/' . $path . '/blob/main/assets/banner-772x250.jpg?raw=true';
+            $readmeUrl = 'https://raw.githubusercontent.com/' . $path . '/refs/heads/main/README.md';
 
             $contents = file_get_contents( $url );
             if ( $contents ) {
@@ -213,11 +231,25 @@ class Settings {
                     $repoInfo = new \stdClass;
                     $repoInfo->type = 'plugin';
                     $repoInfo->bannerImage = '';
+                    $repoInfo->bannerImageLarge = '';
                     $repoInfo->requiresPHP = '';
                     $repoInfo->authorUrl = '';
                     $repoInfo->testedUpTo = '';
                     $repoInfo->signingAuthority = '';
                     $repoInfo->requiresAtLeast = '';
+                    $repoInfo->readme = file_get_contents( $readmeUrl );
+                    $repoInfo->readmeHtml = '';
+
+                    if ( $repoInfo->readme ) {
+                        require_once( JUNIPER_AUTHOR_PATH . '/vendor/autoload.php' );
+
+                        $parsedown = new \Parsedown();
+                        $repoInfo->readmeHtml = $parsedown->text( $repoInfo->readme );
+                    }
+
+                    $testBannerImage = 'https://raw.githubusercontent.com' . $path . '/refs/heads/main/assets/banner-1544x500.jpg';
+                    //      https://github.com/wp-privacy/wp-api-privacy/raw/refs/heads/main/assets/banner-772x250.jpg
+                    //      https://raw.githubusercontent.com/wp-privacy/wp-api-privacy/refs/heads/main/assets/banner-772x250.jpg
 
                     $mapping = array(
                         'plugin name' => 'pluginName',
@@ -238,8 +270,8 @@ class Settings {
                         }
                     } 
 
-                    if ( file_exists( $bannerImage ) ) {
-                        $repoInfo->bannerImage = $bannerImage;
+                    if ( $this->curlExists( $testBannerImage ) ) {
+                        $repoInfo->bannerImage = $testBannerImage;
                     }
 
                     if ( empty( $repoInfo->stableVersion ) ) {

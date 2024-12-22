@@ -219,6 +219,33 @@ class JuniperAuthor extends GithubUpdater {
         wp_die();
     }
 
+    public function curlExists( $url ) {
+        $ch = curl_init($url);
+        
+        curl_setopt($ch, CURLOPT_NOBODY, true);
+        curl_exec($ch);
+        $retcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return ( $retcode == 200 );
+    }
+
+    public function curlGet( $url ) {
+        $ch = curl_init();
+        curl_setopt( $ch, CURLOPT_URL, $url );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_TIMEOUT, 10000 );
+
+        $headers[] = 'Authorization: Bearer ';
+        $headers[] = 'X-GitHub-Api-Version: 2022-11-28';
+
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
+        curl_setopt( $ch, CURLOPT_USERAGENT, 'Juniper/Author' );
+        $response = curl_exec( $ch );
+
+        return $response;
+    }
+
     public function lookForReleases() {
         if ( time() > $this->settings->getSetting( 'next_release_time' ) ) {
             // update all repos
@@ -237,9 +264,12 @@ class JuniperAuthor extends GithubUpdater {
                 foreach( $repos as $url => $repoData ) {
                     $repoUrl = str_replace( 'https://github.com/', 'https://api.github.com/repos/', $url . '/releases' );
 
-                    $info = $this->getReleaseInfo( $repoUrl );
+                    $info = $this->curlGet( $repoUrl );
+                    
 
                     if ( $info) {
+                        $info = json_decode( $info );
+
                         $hadReleases = true;
 
                         $releases[ $url ] = $info;
