@@ -1,2 +1,2 @@
-# juniper-author
+# Juniper/Author
 A WordPress plugin to manage plugin and theme ownership on various platforms, starting with Github
