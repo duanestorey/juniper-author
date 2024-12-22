@@ -91,6 +91,7 @@ class Settings {
 
                     $release->tagName = $oneRelease->tag_name;
                     $release->name = $oneRelease->name;
+                    $release->description = $oneRelease->body;
                     $release->publishedDate = strtotime( $oneRelease->published_at );
 
                     $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $oneRelease->tag_name;
@@ -189,6 +190,7 @@ class Settings {
             $parsed = parse_url( $repoUrl );
             $path = str_replace( '.git', '', $parsed[ 'path' ] );
             $url = 'https://raw.githubusercontent.com/' . $path . '/refs/heads/main/' . $phpFile;
+            $bannerImage = 'https://github.com/' . $path . '/blob/main/assets/banner-772x250.jpg?raw=true';
 
             $contents = file_get_contents( $url );
             if ( $contents ) {
@@ -200,12 +202,15 @@ class Settings {
                     
                     $repoInfo = new \stdClass;
                     $repoInfo->type = 'plugin';
+                    $repoInfo->bannerImage = '';
 
                     $mapping = array(
                         'plugin name' => 'pluginName',
-                        'stable' => 'stable',
+                        'stable' => 'stableVersion',
+                        'version' => 'version',
                         'description' => 'description',
                         'author' => 'author',
+                        'author uri' => 'authorUrl',
                         'requires php' => 'requiresPHP',
                         'requires at least' => 'requiresAtLeast',
                         'tested up to' => 'testedUpTo',
@@ -217,6 +222,10 @@ class Settings {
                             $repoInfo->$value = $headers[ $key ];
                         }
                     } 
+
+                    if ( file_exists( $bannerImage ) ) {
+                        $repoInfo->bannerImage = $bannerImage;
+                    }
 
                     return $repoInfo;
                 }

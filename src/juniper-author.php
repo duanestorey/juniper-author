@@ -220,7 +220,7 @@ class JuniperAuthor extends GithubUpdater {
     }
 
     public function lookForReleases() {
-        if ( time() > $this->settings->getSetting( 'next_release_time' ) ) {
+        if ( true || time() > $this->settings->getSetting( 'next_release_time' ) ) {
             // update all repos
             $repos = $this->settings->getSetting( 'repositories' );
             $this->settings->setSetting( 'reposistories', [] );
@@ -252,7 +252,7 @@ class JuniperAuthor extends GithubUpdater {
             }
 
             // update next time for at least 15 minutes
-            $this->settings->setSetting( 'next_release_time', time() + 15*60 );
+            $this->settings->setSetting( 'next_release_time', time() + 5*60 );
             $this->settings->saveSettings();
         }
     }
