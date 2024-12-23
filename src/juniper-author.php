@@ -26,7 +26,7 @@ class JuniperAuthor extends GithubUpdater {
     protected $utils = null;
 
     protected function __construct() {
-        $this->settings = new Settings();;
+        $this->settings = new Settings( $this );;
         $this->utils = new Utils( $this->settings );
 
         // Plugin action links
@@ -34,6 +34,7 @@ class JuniperAuthor extends GithubUpdater {
         add_action( 'admin_init', array( $this, 'loadAssets' ) );
         add_action( 'admin_init', array( $this, 'handleRepoLinks' ) );
         add_action( 'rest_api_init', array( $this, 'setupRestApi' ) );
+        add_filter( 'juniper_repos', array( $this, 'modifyReleasesWithSignedInfo' ) );
        // add_action( 'init', array( $this, 'lookForReleases' ) );
         add_action( 'wp_ajax_handle_ajax', array( $this, 'handleAjax' ) );
         add_action( 'wp_ajax_nopriv_handle_ajax', array( $this, 'handleAjax' ) );
@@ -76,65 +77,68 @@ class JuniperAuthor extends GithubUpdater {
 
             @mkdir( JUNIPER_AUTHOR_RELEASES_PATH, 0755 );
 
-            $releases = $this->settings->getSetting( 'releases' );
-            if ( !empty( $releases[ $repo ] ) ) {
-                foreach( $releases[ $repo ] as $num => $releaseInfo ) {
-                    if ( $releaseInfo->tag_name == $tagName ) {
-                        $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $releaseInfo->tag_name	;
+            $repositories = $this->settings->getRepositories();
+            
+            foreach( $repositories as $oneRepo ) {
+                if ( $oneRepo->repository->fullName == $repo ) {
+                    foreach( $oneRepo->releases as $releaseInfo ) {
+                        if ( $releaseInfo->tag == $tagName ) {
+                            $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . $repo . '/' . $releaseInfo->tag	;
 
-                        if ( !file_exists( $releasePath ) ) {
-                            @mkdir( $releasePath, 0755, true );
+                            if ( !file_exists( $releasePath ) ) {
+                                @mkdir( $releasePath, 0755, true );
+                       
+                                if ( !empty( $releaseInfo->downloadUrl ) ) {
+                                    $zipName = basename( $releaseInfo->downloadUrl );
+                                    $destinationZipFile = $releasePath . '/' . $zipName;
 
-                            if ( !empty( $releaseInfo->assets[0]->name ) ) {
-                                $zipName = $releaseInfo->assets[0]->name;
-                                $destinationZipFile = $releasePath . '/' . $zipName;
+                                    if ( !file_exists( $destinationZipFile ) ) {
+                                        copy( $releaseInfo->downloadUrl, $destinationZipFile ); 
 
-                                if ( !file_exists( $destinationZipFile ) ) {
-                                    copy( $releaseInfo->assets[0]->browser_download_url, $destinationZipFile ); 
+                                        $destinationSignedZipFile = str_replace( '.zip', '.signed.zip', $destinationZipFile );
 
-                                    $destinationSignedZipFile = str_replace( '.zip', '.signed.zip', $destinationZipFile );
+                                        $zip = new \ZipArchive();
 
-                                    $zip = new \ZipArchive();
-
-                                    $sigFile = $releasePath . '/juniper.sig';
-                                
-                                    $sig = array();
-
-                                    if ( $current_user->display_name ) {
-                                        $sig[ 'author' ] = $current_user->display_name;
-                                    }
-
-                                    $hashBin = hash_file( 'SHA256', $destinationZipFile, true );
+                                        $sigFile = $releasePath . '/juniper.sig';
                                     
-                                    $sig[ 'ver' ] = '1.0';
-                                    $sig[ 'hash' ] = base64_encode( $hashBin );
-                                    $sig[ 'hash_type' ] = 'SHA256';
-                                    $sig[ 'signature' ] = base64_encode( $private_key->sign( $hashBin ) );
+                                        $sig = array();
 
-                                    ksort( $sig );
+                                        if ( $current_user->display_name ) {
+                                            $sig[ 'author' ] = $current_user->display_name;
+                                        }
 
-                                    // Sign the entire package with the private key so we can make sure the variables haven't been tampered with
-                                    $sig[ 'auth' ] = base64_encode( $private_key->sign( hash( 'sha256', json_encode( $sig ), true ) ) );
-                                    //$sig[ 'package_url' ] =  plugins_url( basename( $repo ) . '/' . $releaseInfo->tag_name . '/' . str_replace( basename( $release->zipName ), JUNIPER_AUTHOR_MAIN_FILE );
-                                
-                                    file_put_contents( $sigFile, json_encode( $sig ) );         
+                                        $hashBin = hash_file( 'SHA256', $destinationZipFile, true );
+                                        
+                                        $sig[ 'ver' ] = '1.0';
+                                        $sig[ 'hash' ] = base64_encode( $hashBin );
+                                        $sig[ 'hash_type' ] = 'SHA256';
+                                        $sig[ 'signature' ] = base64_encode( $private_key->sign( $hashBin ) );
 
-                                    if ( $zip->open( $destinationSignedZipFile, \ZipArchive::OVERWRITE | \ZipArchive::CREATE ) === TRUE ) {
-                                        $zip->addFile( $sigFile, 'signature.json' );
-                                        $zip->addFile( $destinationZipFile, $zipName );
-                                        $zip->setArchiveComment( json_encode( $sig ) );
+                                        ksort( $sig );
 
-                                        $zip->close();
+                                        // Sign the entire package with the private key so we can make sure the variables haven't been tampered with
+                                        $sig[ 'auth' ] = base64_encode( $private_key->sign( hash( 'sha256', json_encode( $sig ), true ) ) );
+                                    
+                                        file_put_contents( $sigFile, json_encode( $sig ) );         
+
+                                        if ( $zip->open( $destinationSignedZipFile, \ZipArchive::OVERWRITE | \ZipArchive::CREATE ) === TRUE ) {
+                                            $zip->addFile( $sigFile, 'signature.json' );
+                                            $zip->addFile( $destinationZipFile, $zipName );
+                                            $zip->setArchiveComment( json_encode( $sig ) );
+
+                                            $zip->close();
+                                        }
+
+                                        rename( $destinationZipFile, str_replace( '.zip', '.bak.zip', $destinationZipFile ) );
+
+                                        return basename( $destinationSignedZipFile );
                                     }
-
-                                    rename( $destinationZipFile, str_replace( '.zip', '.bak.zip', $destinationZipFile ) );
-
-                                    return basename( $destinationSignedZipFile );
                                 }
-                            }
-                        };
+                            };
 
-                        break;
+                            break;
+                                    
+                        }
                     }
                 }
             }
@@ -221,48 +225,6 @@ class JuniperAuthor extends GithubUpdater {
         wp_die();
     }
 
-    public function lookForReleases() {
-        /*
-        if ( time() > $this->settings->getSetting( 'next_release_time' ) ) {
-            // update all repos
-            $repos = $this->settings->getSetting( 'repositories' );
-            $this->settings->setSetting( 'reposistories', [] );
-            foreach( $repos as $name => $info ) {
-                $this->settings->mayebAddRepo( $name );
-            }
-            
-            $repos = $this->settings->getSetting( 'repositories' );
-
-            $releases = [];
-
-            $hadReleases = false;
-            if ( count( $repos ) ) {
-                foreach( $repos as $url => $repoData ) {
-                    $repoUrl = str_replace( 'https://github.com/', 'https://api.github.com/repos/', $url . '/releases' );
-
-                    $info = $this->utils->curlGitHubRequest( $repoUrl );
-
-                    if ( $info) {
-                        $info = json_decode( $info );
-
-                        $hadReleases = true;
-
-                        $releases[ $url ] = $info;
-                       
-                    }
-                }
-                if ( $hadReleases ) {
-                     $this->settings->setSetting( 'releases', $releases );
-                }  
-            }
-
-            // update next time for at least 15 minutes
-            $this->settings->setSetting( 'next_release_time', time() + 5*60 );
-            $this->settings->saveSettings();
-        }
-        */
-    }
-
     public function getPublicKey() {
         $public_key = $this->settings->getSetting( 'public_key' );
         if ( $public_key ) {
@@ -294,8 +256,22 @@ class JuniperAuthor extends GithubUpdater {
         return $this->getRepositories();
     }   
 
+    public function modifyReleasesWithSignedInfo( $repositories ) {
+        foreach( $repositories as $repo ) {
+            if ( !empty( $repo->releases ) ) {
+                foreach( $repo->releases as $oneRelease ) {
+                    if ( !empty( $oneRelease->downloadUrl ) ) {
+                        $downloadUrl = $oneRelease->downloadUrl;
+                    }
+                }
+            }
+        }
+
+        return $repositories;
+    }
+
     public function getRepositories() {
-        return $this->settings->getSetting( 'repositories' );
+        return apply_filters( 'juniper_repos', $this->settings->getSetting( 'repositories' ) );
     }
 
     public function getFilteredRepositories( $repoType = 'plugin' ) {

@@ -16,6 +16,8 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 class Settings {
+    var $main = null;
+
     // The WordPress settings key
     public const SETTING_KEY = "juniper_author_settings";
     public const UPDATED_KEY = "juniper_author_settings_updated";
@@ -25,8 +27,14 @@ class Settings {
     protected $settingsPages = [];
     protected $settingsSections = [];
 
-    public function __construct() {
+    public function __construct( $main ) {
+        $this->main = $main;
+
         $this->loadSettings();
+    }
+
+    public function getRepositories() {
+        return $this->main->getRepositories();
     }
     
     public function init() {
