@@ -417,8 +417,8 @@ class JuniperAuthor extends GithubUpdater {
             $currentPage = $_GET[ 'page' ];
 
             if ( $currentPage == 'juniper-options' || $currentPage == 'juniper-repos' || $currentPage == 'juniper' ) {
-                wp_enqueue_style( 'juniper-author', plugins_url( 'dist/juniper.css', JUNIPER_AUTHOR_MAIN_FILE ), false );
-                wp_enqueue_script( 'juniper-author', plugins_url( 'dist/juniper.js', JUNIPER_AUTHOR_MAIN_FILE ), array( 'jquery' ) );
+                wp_enqueue_style( 'juniper-author', plugins_url( 'dist/juniper-server.css', JUNIPER_AUTHOR_MAIN_FILE ), false );
+                wp_enqueue_script( 'juniper-author', plugins_url( 'dist/juniper-server.js', JUNIPER_AUTHOR_MAIN_FILE ), array( 'jquery' ) );
 
                 $data = array(
                     'ajax_url' => admin_url( 'admin-ajax.php' ),
@@ -519,6 +519,7 @@ class JuniperAuthor extends GithubUpdater {
     
         if ( $result ) {
             $decodedResult = json_decode( $result );
+
             $repos = [];
 
             foreach( $decodedResult as $oneResult ) {
@@ -527,7 +528,7 @@ class JuniperAuthor extends GithubUpdater {
                     continue;
                 }
 
-                $possiblePluginFile = 'https://raw.githubusercontent.com/' . $oneResult->full_name . '/refs/heads/main/' . basename( $oneResult->full_name ) . '.php';
+                $possiblePluginFile = 'https://raw.githubusercontent.com/' . $oneResult->full_name . '/refs/heads/' . $oneResult->default_branch . '/' . basename( $oneResult->full_name ) . '.php';
                 if ( !$this->utils->curlRemoteFileExists( $possiblePluginFile ) ) {
                     continue;
                 }
@@ -541,7 +542,7 @@ class JuniperAuthor extends GithubUpdater {
                 $pluginInfo->bannerImage = '';
                 $pluginInfo->bannerImageLarge = '';
 
-                $testBannerImage = 'https://raw.githubusercontent.com/' . $oneResult->full_name . '/refs/heads/main/assets/banner-1544x500.jpg';
+                $testBannerImage = 'https://raw.githubusercontent.com/' . $oneResult->full_name . '/refs/heads/' . $oneResult->default_branch . '/assets/banner-1544x500.jpg';
                 if ( $this->utils->curlRemoteFileExists( $testBannerImage ) ) {
                     $pluginInfo->bannerImageLarge = $testBannerImage;
                     $pluginInfo->bannerImage = $testBannerImage;
@@ -550,7 +551,7 @@ class JuniperAuthor extends GithubUpdater {
                 $pluginInfo->readme = '';
                 $pluginInfo->readmeHtml = '';
 
-                $readmeFile = 'https://raw.githubusercontent.com/' . $oneResult->full_name . '/refs/heads/main/README.md';
+                $readmeFile = 'https://raw.githubusercontent.com/' . $oneResult->full_name . '/refs/heads/' . $oneResult->default_branch . '/README.md';
 
                 if ( $this->utils->curlRemoteFileExists( $readmeFile ) ) {
                     require_once( JUNIPER_AUTHOR_PATH . '/vendor/autoload.php' );

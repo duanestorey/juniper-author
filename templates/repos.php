@@ -52,4 +52,8 @@
         <a href="admin.php?page=juniper-repos&juniper_action=refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="button button-primary" />Refresh</a>
         <a href="admin.php?page=juniper-repos&juniper_action=submit&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="button button-secondary" />Submit To Mirror</a>
     </form>
+
+    <h2>Debug</h2>
+    <textarea class="debug" rows="20" id="repo_debug" readonly>
+    </textarea>
 </div>

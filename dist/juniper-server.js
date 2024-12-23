@@ -1,10 +1,10 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./assets/juniper.js":
-/*!***************************!*\
-  !*** ./assets/juniper.js ***!
-  \***************************/
+/***/ "./src/js/juniper-server.js":
+/*!**********************************!*\
+  !*** ./src/js/juniper-server.js ***!
+  \**********************************/
 /***/ (() => {
 
 function juniperAjax(specificAction, additionalParams, callback) {
@@ -102,10 +102,10 @@ jQuery(document).ready(function () {
 
 /***/ }),
 
-/***/ "./assets/juniper.scss":
-/*!*****************************!*\
-  !*** ./assets/juniper.scss ***!
-  \*****************************/
+/***/ "./src/scss/juniper-server.scss":
+/*!**************************************!*\
+  !*** ./src/scss/juniper-server.scss ***!
+  \**************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -201,8 +201,8 @@ __webpack_require__.r(__webpack_exports__);
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			"/juniper": 0,
-/******/ 			"juniper": 0
+/******/ 			"/juniper-server": 0,
+/******/ 			"juniper-server": 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -252,8 +252,8 @@ __webpack_require__.r(__webpack_exports__);
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	__webpack_require__.O(undefined, ["juniper"], () => (__webpack_require__("./assets/juniper.js")))
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["juniper"], () => (__webpack_require__("./assets/juniper.scss")))
+/******/ 	__webpack_require__.O(undefined, ["juniper-server"], () => (__webpack_require__("./src/js/juniper-server.js")))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["juniper-server"], () => (__webpack_require__("./src/scss/juniper-server.scss")))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
