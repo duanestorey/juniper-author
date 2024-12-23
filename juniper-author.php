@@ -15,7 +15,7 @@
     Domain Path: /lang
     Primary Branch: main
     GitHub Plugin URI: duanestorey/juniper-author
-    Stable: 1.0.4
+    Stable: 1.0.5
     Authority: https://plugins.duanestorey.com
 
     Copyright (C) 2024-2025 by Duane Storey - All Rights Reserved
