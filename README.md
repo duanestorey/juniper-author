@@ -36,8 +36,10 @@ To facilitate code-signing, two things are required. The first is to use your pr
 
 Second, you need to add a particular header onto your main plugin file, "Authority".  And example is below:
 
-`Stable: 1.0.2
-`Authority: https://plugins.duanestorey.com
+```
+Stable: 1.0.2
+Authority: https://plugins.duanestorey.com
+```
 
 The website listed for the Authority needs to be the website where Juniper/Author is installed, and it must be for a repository under control in the "Repositories" menu in Juniper. 
 
