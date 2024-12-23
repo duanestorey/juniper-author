@@ -33,9 +33,9 @@ class JuniperAuthor extends GithubUpdater {
         add_filter( 'plugin_action_links_' . plugin_basename( JUNIPER_AUTHOR_MAIN_FILE ), array( $this, 'add_action_links' ) );
         add_action( 'admin_init', array( $this, 'loadAssets' ) );
         add_action( 'admin_init', array( $this, 'handleRepoLinks' ) );
+        add_action( 'admin_init', array( $this, 'checkForDownload' ) );
         add_action( 'rest_api_init', array( $this, 'setupRestApi' ) );
         add_filter( 'juniper_repos', array( $this, 'modifyReleasesWithSignedInfo' ) );
-       // add_action( 'init', array( $this, 'lookForReleases' ) );
         add_action( 'wp_ajax_handle_ajax', array( $this, 'handleAjax' ) );
         add_action( 'wp_ajax_nopriv_handle_ajax', array( $this, 'handleAjax' ) );
 
@@ -52,6 +52,64 @@ class JuniperAuthor extends GithubUpdater {
         $this->settings->init();
 
        // $this->lookForReleases();
+    }
+
+    public function getReleaseFromRepoAndTag( $repoName, $tagName ) {
+        $repositories = $this->getRepositories();
+        foreach( $repositories as $oneRepo ) {
+            if ( $oneRepo->repository->fullName == $repoName ) {
+                foreach( $oneRepo->releases as $releaseInfo ) {
+                    if ( $releaseInfo->tag == $tagName ) {
+                        return $releaseInfo;
+                    }
+                }
+            }
+        }    
+
+        return false;
+    }
+    
+    public function registerDownloadForFile( $fileName ) {
+        $downloads = $this->settings->getSetting( 'downloads' );
+        if ( isset( $downloads[ $fileName ] ) ) {
+            $downloads[ $fileName ]++;
+        } else {
+            $downloads[ $fileName ] = 1;
+        }
+        $this->settings->setSetting( 'downloads', $downloads );
+    }
+
+    public function getDownloadCountForFile( $fileName ) {
+        $downloads = $this->settings->getSetting( 'downloads' );
+        if ( $downloads ) {
+            if ( isset( $downloads[ $fileName ] ) ) {
+                return $downloads[ $fileName ];
+            } 
+        }   
+
+        return 0;
+    }
+
+    public function checkForDownload() {
+        if ( isset( $_GET[ 'download_package' ] ) ) {
+            $tag = $_GET[ 'tag' ];
+            $repo = $_GET[ 'repo' ];
+
+            $releaseInfo = $this->getReleaseFromRepoAndTag( $repo, $tag );
+            if ( $releaseInfo ) {
+                $signedAppend =  str_replace( '.zip', '.signed.zip', $repo . '/' . $releaseInfo->tag . '/' . basename( $releaseInfo->downloadUrl ) ); 
+                $releasePath = JUNIPER_AUTHOR_RELEASES_PATH;
+                $signedZip = $releasePath . '/' . $signedAppend;
+                $signedUrl = plugins_url( 'releases', JUNIPER_AUTHOR_MAIN_FILE ) . '/' . $signedAppend;
+
+                if ( file_exists( $signedZip ) ) {
+                    $this->registerDownloadForFile( $signedZip );
+                    
+                    header( 'Location: ' . $signedUrl );
+                    die;
+                }
+            }
+        }
     }
 
     protected function testPrivateKey( $passPhrase ) {
@@ -257,11 +315,20 @@ class JuniperAuthor extends GithubUpdater {
     }   
 
     public function modifyReleasesWithSignedInfo( $repositories ) {
-        foreach( $repositories as $repo ) {
-            if ( !empty( $repo->releases ) ) {
-                foreach( $repo->releases as $oneRelease ) {
+        foreach( $repositories as $oneRepo ) {
+            if ( !empty( $oneRepo->releases ) ) {
+                foreach( $oneRepo->releases as $oneRelease ) {
                     if ( !empty( $oneRelease->downloadUrl ) ) {
                         $downloadUrl = $oneRelease->downloadUrl;
+                        $zipFile = basename( $downloadUrl );
+                        $signedName = $oneRepo->repository->fullName . '/' . $oneRelease->tag . '/' . str_replace( '.zip', '.signed.zip', $zipFile );
+                        $signedFile = JUNIPER_AUTHOR_RELEASES_PATH . '/' . $signedName;
+
+                        if ( file_exists( $signedFile ) ) {
+                            $oneRelease->signed = true;
+                            $oneRelease->downloadCountSigned = $this->getDownloadCountForFile( $signedFile );
+                            $oneRelease->downloadUrlSigned = admin_url( 'admin.php?page=juniper&download_package=1&repo=' . \urlencode( $oneRepo->repository->fullName ) . '&tag=' . $oneRelease->tag );
+                        }
                     }
                 }
             }
@@ -516,51 +583,6 @@ class JuniperAuthor extends GithubUpdater {
             header( 'Location: ' . admin_url( 'admin.php?page=juniper-repos' ) );
             die;
         }    
-    }
-
-    public function getReleases() {
-        $releases = [];
-
-        if ( !empty( $this->settings->releases ) ) {
-            foreach( $this->settings->releases as $repo => $releaseInfo ) {
-                $releases[ $repo ] = [];
-
-                foreach( $releaseInfo as $oneRelease ) {
-                    $release = new \stdClass;
-
-                    $release->tagName = $oneRelease->tag_name;
-                    $release->name = $oneRelease->name;
-                    $release->description = $oneRelease->body;
-                    $release->publishedDate = strtotime( $oneRelease->published_at );
-
-                    $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . basename( $repo ) . '/' . $oneRelease->tag_name;
-                    
-                    $release->signed = false;
-
-                    if ( !empty( $oneRelease->assets[0]->browser_download_url ) ) {
-                        $signedZip = $releasePath . '/' . str_replace( '.zip', '.signed.zip', basename( $oneRelease->assets[0]->browser_download_url ) );
-                        $release->signed = file_exists( $signedZip );
-                    }
-                    
-                    $release->package = '';
-
-                    if ( $release->signed ) {
-                        $release->package = $signedZip;
-                        
-                    } else {
-                        if ( !empty( $oneRelease->assets[0]->browser_download_url ) ) {
-                            $release->package = $oneRelease->assets[0]->browser_download_url;
-                        }
-                    }
-
-                    $release->package_url = plugins_url( basename( $repo ) . '/' . $oneRelease->tag_name . '/' . basename( $release->package ), JUNIPER_AUTHOR_MAIN_FILE );
-                    
-                    $releases[ $repo ][] = $release;
-                }
-            }
-        }   
-
-        return $releases;
     }
 
     public function handleRepoLinks() {

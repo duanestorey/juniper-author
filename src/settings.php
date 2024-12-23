@@ -198,6 +198,7 @@ class Settings {
 
     public function setSetting( $name, $value ) {
         $this->settings->$name = $value;
+        $this->saveSettings();
     }
 
     public function renderOneSetting( $setting ) {
@@ -264,6 +265,7 @@ class Settings {
 
         $settings->next_release_time = 0;
         $settings->releases = [];
+        $settings->downloads = [];
 
         return $settings;
     }
