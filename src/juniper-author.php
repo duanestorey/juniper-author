@@ -42,7 +42,7 @@ class JuniperAuthor extends GithubUpdater {
         // initialize the updater
         parent::__construct( 
             'juniper-author/juniper-author.php',
-            'notwporg',
+            'duanestorey',
             'juniper-author',
             'main'
         );
@@ -50,8 +50,6 @@ class JuniperAuthor extends GithubUpdater {
 
     public function init() {
         $this->settings->init();
-
-       // $this->lookForReleases();
     }
 
     public function getReleaseFromRepoAndTag( $repoName, $tagName ) {
@@ -637,6 +635,10 @@ class JuniperAuthor extends GithubUpdater {
                 if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
                     if ( $_GET[ 'juniper_action' ] == 'refresh' ) {
                         $this->refreshRepositories();
+                    } else if ( $_GET[ 'juniper_action' ] == 'submit' ) {
+                        $mirrorUrl = $this->settings->getSetting( 'mirror_url' );
+
+                       $this->utils->curlRequest( trailingslashit( $mirrorUrl ) . 'addsite/?url=' . get_bloginfo( 'home' ) );
                     }
                 }
             }

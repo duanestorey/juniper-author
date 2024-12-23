@@ -63,7 +63,7 @@ class Settings {
                 __( 'Options', 'juniper' ),
                 array(
                     $this->addSetting( 'text', 'github_token', __( 'Github Token', 'juniper' ) ),
-                    $this->addSetting( 'text', 'mirror_update_url', __( 'Juniper/Server URL', 'juniper' ) ),
+                    $this->addSetting( 'text', 'mirror_url', __( 'Juniper/Server URL', 'juniper' ) ),
                 )
             );
 
@@ -268,7 +268,7 @@ class Settings {
         $settings->releases = [];
         $settings->downloads = [];
 
-        $settings->mirror_update_url = 'https://notwp.org';
+        $settings->mirror_url = 'https://notwp.org';
 
         return $settings;
     }

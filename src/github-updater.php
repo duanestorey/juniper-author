@@ -45,9 +45,6 @@ class GitHubUpdater {
             }
 
             add_action( 'admin_init', array( $this, 'checkForUpdate' ) );
-        
-          //  $this->checkForUpdate();
-
             add_filter( 'plugins_api', [ $this, 'handlePluginInfo' ], 20, 3 );
             add_filter( 'site_transient_update_plugins', [ $this, 'handleUpdate' ] );
         }
