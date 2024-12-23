@@ -41,7 +41,7 @@ class WordPress {
                 'requires php' => 'requiresPHP',
                 'requires at least' => 'requiresAtLeast',
                 'tested up to' => 'testedUpTo',
-                'signing authority' => 'signingAuthority'
+                'authority' => 'signingAuthority'
             );
 
             foreach( $mapping as $key => $value ) {
