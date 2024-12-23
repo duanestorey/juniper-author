@@ -60,6 +60,11 @@
             
         }
 
+        .image {
+            max-width: 600px;
+            display: block;
+        }
+
         p {
             max-width: 600px;
         }
@@ -67,6 +72,15 @@
 }
 
 .releases {
+    .sign-area {
+        padding-bottom: 20px;
+    }
+    
+    h2 {
+        margin-top: 0px;
+        padding-top: 0px;
+    }
+
     .repo {
         margin-bottom: 0px;
         font-size: 16pt;
@@ -75,5 +89,16 @@
     .repo-loc {
         margin-top: 5px;
         margin-bottom: 10px;
+    }
+
+    .one-repo {
+        padding-left: 20px;
+        border-left: 3px solid #ddd;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    .one-repo:nth-child(even) {
+       
     }
 }

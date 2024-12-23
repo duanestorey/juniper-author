@@ -67,6 +67,16 @@ class Settings {
                 )
             );
 
+
+            $this->addSettingsSection( 
+                $this->settingsPages[ 'options' ],
+                'Repository', 
+                __( 'Repository', 'juniper' ),
+                array(
+                    $this->addSetting( 'image', 'banner_image', __( 'Default Repository Banner Image (ideally 1544x500, but it will be resized automatically)', 'juniper' ) ),
+                )
+            );           
+
             $this->addSettingsSection( 
                 $this->settingsPages[ 'options' ],
                 'Nuclear', 
@@ -79,8 +89,19 @@ class Settings {
     }
 
     public function doOptionsHeader() {
-        if ( get_option( Settings::UPDATED_KEY, false ) ) {
-            echo '<div class="notice notice-success settings-error is-dismissible"><p>' . esc_html( __( 'Your settings have been saved', 'wp-api-privacy' ) ) . '</p></div>';
+        $optionsHeader = get_option( Settings::UPDATED_KEY, false );
+        if ( $optionsHeader ) {
+            echo '<div class="notice notice-success settings-error is-dismissible"><p>';
+            switch( $optionsHeader ) {
+                case 1:
+                    esc_html_e( __( 'Your settings have been saved', 'wp-api-privacy' ) );
+                    break;
+                case 2:
+                    esc_html_e( __( 'Your repositories have been submitted to the specified mirror for inclusion', 'wp-api-privacy' ) );
+                    break;
+            }
+            
+            echo '</p></div>';
             
             delete_option( Settings::UPDATED_KEY );
         }
@@ -96,6 +117,7 @@ class Settings {
 
     public function processSubmittedSettings() {
         // These are our settings  
+
         if ( isset( $_POST[ 'juniper_author_settings' ] ) ) {
             $nonce = $_POST[ 'juniper_author_nonce' ];
             if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
@@ -108,6 +130,72 @@ class Settings {
                             $this->settings->$name = true;
                         } else {
                             $this->settings->$name = false;
+                        }
+                    } if ( isset( $_FILES ) && !empty( $_FILES[ 'wpsetting_' . $name ] ) && isset( $_FILES[ 'wpsetting_' . $name ][ 'name' ] ) && !empty( $_FILES[ 'wpsetting_' . $name ][ 'name' ] ) ) {
+                        $fileType = $_FILES[ 'wpsetting_' . $name ][ 'type' ];
+                        if ( $fileType = 'image/jpeg' || $fileType == 'image/jpg' ) {
+                            $fileName = $_FILES[ 'wpsetting_' . $name ][ 'name' ];
+                           
+                            $fileTempName = $_FILES[ 'wpsetting_' . $name ][ 'tmp_name' ];
+
+                            $uploadInfo = wp_upload_dir();
+                            $destinationLocation = $uploadInfo['basedir'] . '/juniper';
+                            $destinationUrl = $uploadInfo['baseurl'] . '/juniper';
+                            @mkdir( $destinationLocation, 0775, true );
+
+                            $destinationFileName = $destinationLocation . '/banner-image.jpg';
+                            $destinationFileNameSmall = $destinationLocation . '/banner-image-small.jpg';
+                            @unlink( $destinationFileName );
+                            @unlink( $destinationFileNameSmall );
+               
+                            $doCopy = false;
+                            if ( function_exists( 'imagecreatefromjpeg' ) ) {
+                                $imageSize = getimagesize( $fileTempName );
+                                if ( $imageSize ) {
+                                    if ( $imageSize[0] != 1544 && $imageSize[1] != 500 ) {
+                                        $srcImage = imagecreatefromjpeg( $fileTempName );
+                                        $destImage = imagecreatetruecolor( 1544, 500 );
+                                        $destImageSmall = imagecreatetruecolor( 1544/2, 500/2 );
+                                        $origRatio = '3.088'; // equals 1544/500, desired w/h
+                                        $thisRatio = $imageSize[0]/$imageSize[1];
+
+                                        if ( $thisRatio >= $origRatio ) {
+                                            // this is wider than expected, so we have to crop it horizontally
+                                            $newWidth = $imageSize[1]*$origRatio;
+                                            $widthCrop = ( $imageSize[0] - $newWidth ) / 2;
+
+                                            $startX = 0 + $widthCrop;
+                                            $startY = 0;
+                                            $height = $imageSize[1];
+                                            $width = $newWidth;
+                                        } else {
+                                            // this is taller than expected, so we have to crop it vertically
+                                            $newHeight = $imageSize[0]/$origRatio;
+                                            $heightCrop = ( $imageSize[1] - $newHeight ) / 2;
+
+                                            $startX = 0;
+                                            $startY = 0 + $heightCrop;
+                                            $height = $newHeight;
+                                            $width = $imageSize[0];
+
+                                            imagecopyresampled( $destImage, $srcImage, 0, 0, $startX, $startY, 1544, 500, $width, $height );
+                                            imagecopyresampled( $destImageSmall, $destImage, 0, 0, 0, 0, 1544/2, 500/2, 1544, 500 );
+                                        }
+
+                                        imagejpeg( $destImage, $destinationFileName, 90 );
+                                        imagejpeg( $destImageSmall, $destinationFileNameSmall, 90 );
+                                        $doCopy = false;
+                                    }
+                                }
+                            } 
+
+                            if ( $doCopy ) {
+                                rename( $fileTempName, $destinationFileName );
+                            }
+                            
+                            // add cache busting since we are using the same filename
+                            $this->settings->$name = $destinationUrl . '/banner-image.jpg?cache=' . time();    
+                            $this->settings->{$name . '_small'} = $destinationUrl . '/banner-image-small.jpg?cache=' . time();                    
                         }
                     } else {
                         if ( isset( $_POST[ 'wpsetting_' . $name ] ) ) {
@@ -125,7 +213,8 @@ class Settings {
                     $this->saveSettings();
                 } else if ( $this->settings->reset_settings ) {
                     $this->deleteAllOptions();
-                    $this->settings = false;
+                    $this->settings = null;
+                    $this->loadSettings();
                 } else {
                     $this->saveSettings();
                 } 
@@ -155,8 +244,8 @@ class Settings {
     }
 
     public function loadSettings() {
-        $settings = get_option( Settings::SETTING_KEY );
-        if ( $settings ) {
+        $settings = get_option( Settings::SETTING_KEY, false );
+        if ( $settings !== false ) {
             $defaults = $this->getDefaultSettings();
 
             // merge in defaults to ensure new settings are added to old
@@ -205,6 +294,19 @@ class Settings {
     public function renderOneSetting( $setting ) {
         echo '<div class="setting ' . $setting->type . '">';
         switch( $setting->type ) {
+            case 'image':
+                $currentSetting = $this->getSetting( $setting->name );
+               
+                if ( $currentSetting ) { 
+                    echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '">' . esc_html( $setting->desc ) . '</label>';
+                    echo '<br/>';
+                    echo '<img class="image" src="' . $currentSetting . '" />';
+                    echo '<a href="#" class="remove" data-image="' . esc_attr( $setting->name ) . '">' . __( 'Remove', 'juniper' ) . '</a>';
+                } else {
+                    echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '">' . esc_html( $setting->desc ) . '</label><br/>';
+                    echo '<input type="file" accept="image/jpeg, image/jpg" name="wpsetting_' . esc_attr( $setting->name ) . '" >';
+                }
+                break;
             case 'checkbox':
                 $checked = ( $this->getSetting( $setting->name ) ? ' checked' : '' );
                 echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '">';
@@ -270,6 +372,14 @@ class Settings {
 
         $settings->mirror_url = 'https://notwp.org';
 
+        $settings->banner_image = false;
+        $settings->banner_image_small = false;
+
+        // for ajax updates
+        $settings->ajax_repos = [];
+        $settings->ajax_update_data = [];
+        $settings->ajax_stage = 0;
+
         return $settings;
     }
 
@@ -323,8 +433,6 @@ class Settings {
             'juniper-options',
             array( $this, 'renderOptionsPage' )
         );   
-
-
     }
 
     static function deleteAllOptions() {

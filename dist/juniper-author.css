@@ -1,0 +1,70 @@
+.juniper textarea {
+  width: 600px;
+}
+.juniper th.desc {
+  width: 60%;
+}
+.juniper .red {
+  color: red;
+}
+.juniper .green {
+  color: green;
+}
+.juniper .progress {
+  display: none;
+  height: 30px;
+  border: 1px solid #ddd;
+  margin: 20px 0px;
+}
+.juniper .progress .bar {
+  width: 20%;
+  background-color: #2271b1;
+  height: 100%;
+  line-height: 30px;
+  text-align: center;
+  color: white;
+}
+.juniper .repo-table {
+  width: 100%;
+}
+.juniper .repo-table thead th {
+  text-align: left;
+}
+.juniper .text input {
+  width: 50%;
+}
+.juniper .text label {
+  padding-left: 10px;
+}
+.juniper .setting {
+  margin-bottom: 15px;
+}
+.juniper .setting .image {
+  max-width: 600px;
+  display: block;
+}
+.juniper .setting p {
+  max-width: 600px;
+}
+
+.releases .sign-area {
+  padding-bottom: 20px;
+}
+.releases h2 {
+  margin-top: 0px;
+  padding-top: 0px;
+}
+.releases .repo {
+  margin-bottom: 0px;
+  font-size: 16pt;
+}
+.releases .repo-loc {
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+.releases .one-repo {
+  padding-left: 20px;
+  border-left: 3px solid #ddd;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}

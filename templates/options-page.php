@@ -2,15 +2,13 @@
     <h1><?php esc_html_e( 'Author/Options', 'juniper' ); ?></h1>
 
     <p>
-        <?php esc_html_e( 'You can configure the options for Juniper/Author here.', 'juniper' ); ?><br />
-
-
+        <?php esc_html_e( 'You can configure the options for Juniper/Author here. Addional options will show after generating your private key.', 'juniper' ); ?><br />
     </p>
 
     <?php $this->doOptionsHeader(); ?>
 
     <?php if ( $this->getSetting( 'private_key' ) ) { ?>
-        <form method="post" action="admin.php?page=juniper-options"> 
+        <form method="post"  enctype="multipart/form-data" action="admin.php?page=juniper-options"> 
             <input type="hidden" name="juniper_author_settings" value="1">
             <input type="hidden" name="juniper_author_nonce" value="<?php echo wp_create_nonce( 'juniper' ); ?>">
             <table class="form-table" role="presentation">
@@ -32,7 +30,7 @@
             <input type="submit" id="submit" class="button button-primary" name="submit" value="<?php esc_attr_e( 'Save Changes', 'juniper' ); ?>" />
         </form> 
     <?php } else { ?>
-        <form method="post" action="admin.php?page=juniper-options"> 
+        <form method="post" enctype="multipart/form-data" action="admin.php?page=juniper-options"> 
             <input type="hidden" name="juniper_author_gen_keypair" value="1">
             <input type="hidden" name="juniper_author_nonce" value="<?php echo wp_create_nonce( 'juniper' ); ?>">
             <table class="form-table" role="presentation">

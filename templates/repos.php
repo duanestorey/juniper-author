@@ -1,10 +1,14 @@
 <div class="wrap juniper">
     <h1><?php esc_html_e( 'Author/Repositories', 'juniper' ); ?></h1>
 
-    <p><?php esc_html_e( 'You can manage your repositories here', 'juniper' ); ?></p>
+    <p><?php esc_html_e( 'You can manage your Github repositories here.', 'juniper' ); ?></p>
 
     <?php $this->doOptionsHeader(); ?>
 
+    <?php if ( $this->getSetting( 'github_token' ) ) { ?>
+
+    <?php $repos = $this->getSetting( 'repositories' ); ?>
+    <?php if ( count ( $repos ) ) { ?>
     <table class="repo-table striped wp-list-table widefat" role="presentation">
         <thead>
             <tr>
@@ -17,7 +21,7 @@
         </thead>
         <tbody>
             
-        <?php foreach( $this->getSetting( 'repositories' ) as $name => $data ) { ?>
+        <?php foreach( $repos as $name => $data ) { ?>
             <tr>
                 <td><a href="<?php echo esc_attr( $data->repository->repoUrl ); ?>" target="_blank"><?php echo esc_html( $data->info->pluginName ); ?></a</td>
                 <td><?php echo esc_html( strtoupper( $data->info->type ) ); ?></td>
@@ -28,6 +32,9 @@
         <?php }?> 
         </tbody>
     </table>
+    <?php } else { ?>
+        <p><?php _e( 'If this is your first time viewing this page, please do a Full Refresh to import your Github repositories.', 'juniper' ); ?></p>
+    <?php } ?>
     <br />
 
     <form method="post" action="admin.php?page=juniper-repos"> 
@@ -49,11 +56,20 @@
                 <?php }?> 
             </tbody>
         </table>
-        <a href="admin.php?page=juniper-repos&juniper_action=refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="button button-primary" />Refresh</a>
+        <a href="admin.php?page=juniper-repos&juniper_action=refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="do-ajax button button-primary" data-stage="0" />Full Refresh (Repos/Issues/Releases)</a>
+        <a href="admin.php?page=juniper-repos&juniper_action=partial_refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="do-ajax button button-primary" data-stage="10" />Parial Refresh (Issues/Releases)</a>
+        <?php if ( $repos && count( $repos ) ) { ?>
         <a href="admin.php?page=juniper-repos&juniper_action=submit&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="button button-secondary" />Submit To Mirror</a>
+        <?php } ?>
     </form>
 
-    <h2>Debug</h2>
-    <textarea class="debug" rows="20" id="repo_debug" readonly>
-    </textarea>
+    <?php } else { ?>
+        <p><?php echo sprintf( __( 'Please configure your Github token in the %sAuthorship Options%s area first.', 'juniper' ), '<a href="' . admin_url( 'admin.php?page=juniper-options' ) . '">', '</a>' ); ?></p>
+    <?php } ?>
+
+    <div id="debug-area" style="display: none">
+        <h2>Debug</h2>
+        <textarea class="debug" rows="10" id="repo_debug" readonly>
+        </textarea>
+    </div>
 </div>
