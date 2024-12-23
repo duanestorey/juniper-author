@@ -317,6 +317,8 @@ class JuniperAuthor extends GithubUpdater {
     public function modifyReleasesWithSignedInfo( $repositories ) {
         foreach( $repositories as $oneRepo ) {
             if ( !empty( $oneRepo->releases ) ) {
+                $totalDownloads = 0;
+
                 foreach( $oneRepo->releases as $oneRelease ) {
                     if ( !empty( $oneRelease->downloadUrl ) ) {
                         $downloadUrl = $oneRelease->downloadUrl;
@@ -333,8 +335,12 @@ class JuniperAuthor extends GithubUpdater {
                         } else {
                             $oneRelease->donwloadCountTotal = $oneRelease->downloadCount;
                         }
+
+                        $totalDownloads += $oneRelease->donwloadCountTotal;
                     }
                 }
+
+                $oneRepo->totalReleaseDownloads = $totalDownloads;
             }
         }
 
