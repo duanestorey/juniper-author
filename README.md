@@ -43,7 +43,7 @@ Authority: https://plugins.duanestorey.com
 
 The website listed for the Authority needs to be the website where Juniper/Author is installed, and it must be for a repository under control in the "Repositories" menu in Juniper. 
 
-One the plugin is installed on a WordPress website, Juniper/Berry (when it's complete) will use the Authority information in the plugin header to determine where to retrieve the public key for the ZIP file.  Once it retrieves it, it will be used to verify that the ZIP file came from that Juniper/Author installation via that website, and also that the original hash/integrity of the ZIP file is maintained.  If someone where to tamper with the ZIP file, or sign it with a different private key, both situations would fail the integrity check, and the new plugin would not be installed.  
+Once the plugin is installed on a WordPress website, Juniper/Berry (when it's complete) will use the Authority information in the plugin header to determine where to retrieve the public key for future ZIP files for each release.  Once it retrieves it, it will be used to verify that the ZIP file came from that Juniper/Author installation via that website, and also that the original hash/integrity of the ZIP file is maintained.  If someone where to tamper with the ZIP file, or sign it with a different private key, both situations would fail the integrity check, and the new plugin would not be installed.  
 
 ## Early Alpha
 
