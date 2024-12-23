@@ -315,6 +315,9 @@ class JuniperAuthor extends GithubUpdater {
 
     public function modifyReleasesWithSignedInfo( $repositories ) {
         foreach( $repositories as $oneRepo ) {
+            // prime
+            $oneRepo->totalReleaseDownloads = 0;
+
             if ( !empty( $oneRepo->releases ) ) {
                 $totalDownloads = 0;
 
