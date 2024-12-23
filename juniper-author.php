@@ -30,7 +30,7 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-define( 'JUNIPER_AUTHOR_VER', '1.0.4' );
+define( 'JUNIPER_AUTHOR_VER', '1.0.5' );
 define( 'JUNIPER_AUTHOR_PATH', dirname( __FILE__ ) );
 define( 'JUNIPER_AUTHOR_RELEASES_PATH', dirname( __FILE__ ) . '/releases' );
 define( 'JUNIPER_AUTHOR_MAIN_FILE', __FILE__ );
