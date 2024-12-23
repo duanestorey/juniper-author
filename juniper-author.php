@@ -6,7 +6,7 @@
     Description: Facilitates code signing and releases for WordPress add-ons using the Juniper release system for WordPress
     Author: Duane Storey
     Author URI: https://duanestorey.com
-    Version: 1.0.2
+    Version: 1.0.3
     Requires PHP: 6.0
     Requires at least: 6.0
     Tested up to: 6.7
@@ -30,7 +30,7 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-define( 'JUNIPER_AUTHOR_VER', '1.0.0' );
+define( 'JUNIPER_AUTHOR_VER', '1.0.3' );
 define( 'JUNIPER_AUTHOR_PATH', dirname( __FILE__ ) );
 define( 'JUNIPER_AUTHOR_RELEASES_PATH', dirname( __FILE__ ) . '/releases' );
 define( 'JUNIPER_AUTHOR_MAIN_FILE', __FILE__ );
