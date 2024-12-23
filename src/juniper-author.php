@@ -209,13 +209,13 @@ class JuniperAuthor extends GithubUpdater {
         $verifyResult = new \stdClass;
         $verifyResult->signature_valid = '0';
         $verifyResult->file_valid = '0';
-        $verifyResult->package = str_replace( JUNIPER_AUTHOR_RELEASES_PATH, '', $package );
+        $verifyResult->package = $package;
 
         require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
 
         $public_key = PublicKeyLoader::loadPublicKey( $this->settings->getSetting( 'public_key' ) );
         $zip = new \ZipArchive();
-        $result = $zip->open( $package, \ZipArchive::RDONLY );
+        $result = $zip->open( JUNIPER_AUTHOR_RELEASES_PATH . '/' . $package, \ZipArchive::RDONLY );
         if ( $result === TRUE ) {
             $comment = $zip->getArchiveComment();
         
@@ -223,7 +223,7 @@ class JuniperAuthor extends GithubUpdater {
                 $comment = json_decode( $comment );
 
                 $sigBin = base64_decode( $comment->signature );
-                $hashBin = base64_decode( $comment->hash );
+                $hashBin = base64_decode( $comment->hash  );
             }
 
             $result = $public_key->verify( $hashBin, $sigBin );

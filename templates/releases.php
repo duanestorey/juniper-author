@@ -54,11 +54,10 @@
                     <td><?php echo date( 'M jS, Y', $actualRelease->publishedAt ); ?></td>
                     <?php if ( $actualRelease->signed ) { ?>
                         <td class="yesno"><span class="green"><?php _e( 'Yes', 'juniper' ); ?></span></td>
+                        <td> <a class="verify" href="#" data-package="<?php echo esc_attr( $actualRelease->signedName ); ?>"><?php _e( 'Verify', 'juniper' ); ?></td>
                     <?php } else { ?>
                         <td class="yesno"><span class="red"><?php _e( 'No', 'juniper' ); ?></span></td>
                     <?php } ?>
-
-                    <td> <a class="verify" href="#" data-package="<?php echo esc_attr( $actualRelease->downloadUrl ); ?>"><?php _e( 'Verify', 'juniper' ); ?></td>
                 </tr>
             <?php } ?>
             </tbody>
