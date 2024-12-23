@@ -32,4 +32,4 @@ Once the plugin is installed, you'll need to perform the following steps:
 
 ## Early Alpha
 
-This is a very early version, with several missing features  
+This is a very early version, with several missing features. That said, it's at the point where it needs a few alpha/beta testers.  So if you have a public-facing (not local) website that you want to use as your main server for your Github plugins, then please install Juniper/Author and provide some feedback via Github Issues.  Currently Juniper/Author doesn't facilitate upgrades or the consumption of signed ZIP files, but this will be coming soon.
