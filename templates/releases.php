@@ -46,7 +46,11 @@
                     <td><?php echo esc_html( $actualRelease->tag ); ?></td>
                     <td><?php echo esc_html( $actualRelease->name ); ?></td>
                     
+                    <?php if ( $actualRelease->signed ) { ?>
+                    <td class="package"><?php echo esc_html( basename( $actualRelease->signedName ) ); ?></td>
+                    <?php } else { ?>
                     <td class="package"><?php echo esc_html( basename( $actualRelease->downloadUrl ) ); ?></td>
+                    <?php } ?>
                     <td><?php echo date( 'M jS, Y', $actualRelease->publishedAt ); ?></td>
                     <?php if ( $actualRelease->signed ) { ?>
                         <td class="yesno"><span class="green"><?php _e( 'Yes', 'juniper' ); ?></span></td>

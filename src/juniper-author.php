@@ -326,8 +326,12 @@ class JuniperAuthor extends GithubUpdater {
 
                         if ( file_exists( $signedFile ) ) {
                             $oneRelease->signed = true;
+                            $oneRelease->signedName = $signedName;
                             $oneRelease->downloadCountSigned = $this->getDownloadCountForFile( $signedFile );
+                            $oneRelease->donwloadCountTotal = $oneRelease->downloadCount + $oneRelease->downloadCountSigned;
                             $oneRelease->downloadUrlSigned = admin_url( 'admin.php?page=juniper&download_package=1&repo=' . \urlencode( $oneRepo->repository->fullName ) . '&tag=' . $oneRelease->tag );
+                        } else {
+                            $oneRelease->donwloadCountTotal = $oneRelease->downloadCount;
                         }
                     }
                 }

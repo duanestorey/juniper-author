@@ -82,12 +82,12 @@ function juniperBegin() {
     juniperAjax('verify_package', params, function (response) {
       var decodedResponse = jQuery.parseJSON(response);
       var str = "Package: " + decodedResponse.verify["package"] + "\n\n";
-      if (decodedResponse.verify.signature_valid) {
+      if (decodedResponse.verify.signature_valid == 1) {
         str = str + "Signature: VALID\n";
       } else {
         str = str + "Signature: INVALID\n";
       }
-      if (decodedResponse.verify.file_valid) {
+      if (decodedResponse.verify.file_valid == 1) {
         str = str + "File Integrity: VALID\n";
       } else {
         str = str + "File Integrity: INVALID\n";
