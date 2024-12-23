@@ -34,7 +34,7 @@ Once the plugin is installed, you'll need to perform the following steps:
 
 To facilitate code-signing, two things are required. The first is to use your private key and sign each of your release ZIP files. This can be accomplished via the WordPress admin via the Juniper side menu, under Repositories.  From here you can enter your private key password and click the "Sign" button, which will iterate through all your ZIP files and sign them locally.  At this point, all signed ZIP files will be served from your Juniper/Author install.  Regular ZIP files can still be downloaded and processed as per normal, which means regular updates like Github Updater and Repo Man will still continue to work fine.  The signed ZIP files will be used at a later stage when Juniper/Berry is completed.
 
-Second, you need to add a particular header onto your main plugin file, "Authority".  And example is below:
+Second, you need to add a particular header onto your main plugin file, "Authority".  An example is below:
 
 ```
 Stable: 1.0.2
