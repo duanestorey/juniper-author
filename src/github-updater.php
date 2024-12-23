@@ -27,12 +27,14 @@ class GitHubUpdater {
     protected $cacheModifier = null;
 
     protected $updateInfo = null;
+    protected $currentVersion = null;
 
-    public function __construct( $pluginSlug, $githubUser, $githubProject, $githubBranch = 'main' ) {
+    public function __construct( $pluginSlug, $githubUser, $githubProject, $currentVersion, $githubBranch = 'main') {
         $this->pluginSlug = $pluginSlug;
         $this->githubUser = $githubUser;
         $this->githubProject = $githubProject;
         $this->githubBranch = $githubBranch;
+        $this->currentVersion = $currentVersion;
 
         if ( $this->hasValidInfo() && current_user_can( 'update_plugins' ) ) {
             $this->setupGithubUrls();
@@ -108,7 +110,7 @@ class GitHubUpdater {
 
         if ( $this->updateInfo ) {
             if ( 
-                version_compare( PRIVACY_VERSION, $this->updateInfo->version, '<' ) && 
+                version_compare( $this->currentVersion, $this->updateInfo->version, '<' ) && 
                 version_compare( $this->updateInfo->requires, get_bloginfo( 'version' ), '<=' ) && 
                 version_compare( $this->updateInfo->requiresPhp, PHP_VERSION, '<' ) 
             ) {
@@ -173,7 +175,7 @@ class GitHubUpdater {
         $headerData = $this->getHeaderInfo();
         $releaseInfo = $this->_getReleaseInfo();
 
-        if ( $headerData && $releaseInfo && isset( $headerData[ 'stabe' ] ) ) {
+        if ( $headerData && $releaseInfo && isset( $headerData[ 'stable' ] ) ) {
             $latestVersion = $headerData[ 'stable' ];
 
             if ( $latestVersion ) {

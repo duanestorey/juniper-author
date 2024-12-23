@@ -44,6 +44,7 @@ class JuniperAuthor extends GithubUpdater {
             'juniper-author/juniper-author.php',
             'duanestorey',
             'juniper-author',
+            JUNIPER_AUTHOR_VER,
             'main'
         );
     }
