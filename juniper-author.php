@@ -1,8 +1,8 @@
 <?php
 /*
     Plugin Name: Juniper/Author
-    Plugin URI: https://github.com/nowporg/juniper-author
-    Banner: https://github.com/nowporg/juniper-author/blob/main/assets/banner.jpg?raw=true
+    Plugin URI: https://github.com/duanestorey/juniper-author
+    Banner: https://github.com/duanestorey/juniper-author/blob/main/assets/banner.jpg?raw=true
     Description: Facilitates code signing and releases for WordPress add-ons using the Juniper release system for WordPress
     Author: Duane Storey
     Author URI: https://duanestorey.com
@@ -10,13 +10,13 @@
     Requires PHP: 6.0
     Requires at least: 6.0
     Tested up to: 6.7
-    Update URI: https://github.com/nowporg/juniper-author
+    Update URI: https://github.com/duanestorey/juniper-author
     Text Domain: juniper
     Domain Path: /lang
-    GitHub Plugin URI: nowporg/juniper-author
-    Stable: 1.0.2
     Primary Branch: main
-    Signing Authority: https://duanestorey.com
+    GitHub Plugin URI: duanestorey/juniper-author
+    Stable: 1.0.2
+    Authority: https://plugins.duanestorey.com
 
     Copyright (C) 2024-025 by Duane Storey - All Rights Reserved
     You may use, distribute and modify this code under the
