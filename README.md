@@ -16,4 +16,20 @@ Juniper/Author can be installed as normal by downloading the plugin from Github 
 Once the plugin is installed, you'll need to perform the following steps:
 
 1. In the admin panel in the Authorship/Options section, generate a private/public key pair to be used for signing.  Your private key needs to be encrypted with a password, so make sure to choose a strong one here during the key generation phase.  This password is not stored anywhere on your install, so if you lose it you will no longer be able to sign your ZIP files, and will be forced to regenerate a new key (effectively making all other previously released ZIP files no longer valid).
-2. 
+2. Juniper/Author communicates extensively with Github via their public-facing API, which is heavily rate-limited.  To get around that, you need to create an access token to use in by your WordPress installation.
+   - First, go to your Github page, and click your avatar in the corner.  Choose "Settings", and navigate to the bottom to "Developer Settings"
+   - Select "Personal Acccess Tokens", and then "Tokens (Classic)"
+   - Click the dropdown to "Generate new token" and select "New Fine-grained personal access token"
+   - Give your token a name just so you remember what it is, i.e. "Juniper Access Token"
+   - Set the expiration to "No expiration"
+   - Juniper/Author currently doesn't write to Github, so you can use the "Public Repositories (read-only)" setting for access
+   - You don't need to add any other additional permissions, so click "Generate" when done
+   - When you see your token, copy it and paste it into the Juniper/Author admin for the "Github Token" setting, and click Save
+3. Click the "Repositories" menu option under "Juniper" in the WordPress admin
+4. To import your repositories, click "Refresh" at the bottom.  This process may take a little while, so don't worry too much if it takes up to 30 seconds or so
+5. Once done, you should see a list of all your repositories where Juniper/Author detected a valid WordPress plugin.
+6. To submit these plugins to the currently active Juniper/Server install at [notwp.org](https://notwp.org), click Submit To Mirror.  This will queue your site for additional the public mirror.
+
+## Early Alpha
+
+This is a very early version, with several missing features  
