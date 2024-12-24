@@ -47,6 +47,22 @@
   max-width: 600px;
 }
 
+.issues table {
+  border: none;
+  border-collapse: collapse;
+}
+.issues .one-issue img {
+  max-width: 48px;
+  float: left;
+}
+.issues .one-issue td {
+  vertical-align: middle;
+  border: 1px solid #eee;
+}
+.issues .one-issue .name {
+  line-height: 48px;
+}
+
 .releases .sign-area {
   padding-bottom: 20px;
 }

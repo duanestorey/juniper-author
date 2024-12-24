@@ -71,6 +71,29 @@
     }
 }
 
+.issues {
+    table {
+        border:none;
+        border-collapse: collapse;
+    }
+    .one-issue {
+        img {
+            max-width: 48px;
+            float: left;
+        }
+
+        td {
+            vertical-align: middle;
+            border: 1px solid #eee;
+        }
+
+        .name {
+            line-height: 48px;
+       
+        }
+    }
+}
+
 .releases {
     .sign-area {
         padding-bottom: 20px;

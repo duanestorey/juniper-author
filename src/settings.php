@@ -395,6 +395,28 @@ class Settings {
         require_once( JUNIPER_AUTHOR_MAIN_DIR . '/templates/options-page.php' );
     }
 
+    public function renderIssuesPage() {
+        require_once( JUNIPER_AUTHOR_MAIN_DIR . '/templates/issues.php' );
+    }
+
+    public function getOpenIssues() {
+        $repos = $this->getSetting( 'repositories' );
+        $openIssues = [];
+
+        foreach( $repos as $oneRepo ) {
+            if ( !empty( $oneRepo->issues ) && count( $oneRepo->issues ) ) {
+                foreach( $oneRepo->issues as $oneIssue ) {
+                    if ( $oneIssue->state == 'open' ) {
+                        $oneIssue->repoInfo = $oneRepo->repository;
+                        $openIssues[] = $oneIssue;
+                    }
+                }
+            }
+        }
+
+        return $openIssues;
+    }
+
     public function setupSettingsPage() {
         add_menu_page( 
             'Juniper',
@@ -415,7 +437,22 @@ class Settings {
             array( $this, 'renderReleasesPage' )
         );  
 
-        
+        $openIssues = count( $this->getOpenIssues() );
+        if ( $openIssues ) {
+            $issueTitle = sprintf(__( '%s Open Issues', 'juniper' ), '<span class="awaiting-mod"> ' . count( $this->getOpenIssues() ) . '</span>' );
+        } else {
+            $issueTitle = __( 'Open Issues', 'juniper' );
+        }
+
+        add_submenu_page(
+            'juniper',
+            __( 'Open Issues', 'juniper' ),
+            $issueTitle,
+            'manage_options',
+            'juniper-issues',
+            array( $this, 'renderIssuesPage' )
+        );  
+
         add_submenu_page(
             'juniper',
             __( 'Repositories', 'juniper' ),

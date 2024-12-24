@@ -612,7 +612,7 @@ class JuniperAuthor extends GithubUpdater {
         if ( !empty( $_GET[ 'page' ] ) ) {
             $currentPage = $_GET[ 'page' ];
 
-            if ( $currentPage == 'juniper-options' || $currentPage == 'juniper-repos' || $currentPage == 'juniper' ) {
+            if ( $currentPage == 'juniper-options' || $currentPage == 'juniper-repos' || $currentPage == 'juniper' || $currentPage == 'juniper-issues' ) {
                 wp_enqueue_style( 'juniper-author', plugins_url( 'dist/juniper-author.css', JUNIPER_AUTHOR_MAIN_FILE ), false );
                 wp_enqueue_script( 'juniper-author', plugins_url( 'dist/juniper-author.js', JUNIPER_AUTHOR_MAIN_FILE ), array( 'jquery' ) );
 
