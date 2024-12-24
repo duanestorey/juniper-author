@@ -73,7 +73,7 @@ class Settings {
                 'Repository', 
                 __( 'Repository', 'juniper' ),
                 array(
-                    $this->addSetting( 'image', 'banner_image', __( 'Default Repository Banner Image (ideally 1544x500, but it will be resized automatically)', 'juniper' ) ),
+                    $this->addSetting( 'image', 'banner_image', sprintf( __( 'Default Repository Banner Image (ideally %dx%d, but it will be resized automatically)', 'juniper' ), JUNIPER_AUTHOR_BANNER_WIDTH, JUNIPER_AUTHOR_BANNER_HEIGHT ) ),
                 )
             );           
 
@@ -152,11 +152,11 @@ class Settings {
                             if ( function_exists( 'imagecreatefromjpeg' ) ) {
                                 $imageSize = getimagesize( $fileTempName );
                                 if ( $imageSize ) {
-                                    if ( $imageSize[0] != 1544 && $imageSize[1] != 500 ) {
+                                    if ( $imageSize[0] != JUNIPER_AUTHOR_BANNER_WIDTH && $imageSize[1] != JUNIPER_AUTHOR_BANNER_HEIGHT ) {
                                         $srcImage = imagecreatefromjpeg( $fileTempName );
-                                        $destImage = imagecreatetruecolor( 1544, 500 );
-                                        $destImageSmall = imagecreatetruecolor( 1544/2, 500/2 );
-                                        $origRatio = '3.088'; // equals 1544/500, desired w/h
+                                        $destImage = imagecreatetruecolor( JUNIPER_AUTHOR_BANNER_WIDTH, JUNIPER_AUTHOR_BANNER_HEIGHT );
+                                        $destImageSmall = imagecreatetruecolor( JUNIPER_AUTHOR_BANNER_WIDTH/2, JUNIPER_AUTHOR_BANNER_HEIGHT/2 );
+                                        $origRatio = JUNIPER_AUTHOR_BANNER_WIDTH / JUNIPER_AUTHOR_BANNER_HEIGHT;
                                         $thisRatio = $imageSize[0]/$imageSize[1];
 
                                         if ( $thisRatio >= $origRatio ) {
@@ -178,8 +178,8 @@ class Settings {
                                             $height = $newHeight;
                                             $width = $imageSize[0];
 
-                                            imagecopyresampled( $destImage, $srcImage, 0, 0, $startX, $startY, 1544, 500, $width, $height );
-                                            imagecopyresampled( $destImageSmall, $destImage, 0, 0, 0, 0, 1544/2, 500/2, 1544, 500 );
+                                            imagecopyresampled( $destImage, $srcImage, 0, 0, $startX, $startY, JUNIPER_AUTHOR_BANNER_WIDTH, JUNIPER_AUTHOR_BANNER_HEIGHT, $width, $height );
+                                            imagecopyresampled( $destImageSmall, $destImage, 0, 0, 0, 0, JUNIPER_AUTHOR_BANNER_WIDTH/2, JUNIPER_AUTHOR_BANNER_HEIGHT/2, JUNIPER_AUTHOR_BANNER_WIDTH, JUNIPER_AUTHOR_BANNER_HEIGHT );
                                         }
 
                                         imagejpeg( $destImage, $destinationFileName, 90 );
