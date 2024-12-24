@@ -480,7 +480,11 @@ class JuniperAuthor extends GithubUpdater {
     }
 
     public function outputReleases( $params ) {
-        return $this->getRepositories();
+        $result = new \stdClass;
+        $result->client_version = JUNIPER_AUTHOR_VER;
+        $result->releases = $this->getRepositories();
+
+        return $result;
     }   
 
     public function addDefaultBannerImageIfNeeded( $imageUrl, $size ) {
