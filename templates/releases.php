@@ -1,7 +1,7 @@
 <div class="wrap juniper releases">
     <h1><?php esc_html_e( 'Author/Releases', 'juniper' ); ?></h1>
 
-    <p><?php esc_html_e( 'You can view and sign all releases here.', 'juniper' ); ?></p>
+    <p><?php esc_html_e( 'You can view and sign all releases here. If a repository does not show in this list, it is because it has no official Github releases associated with it.', 'juniper' ); ?></p>
 
     <?php $this->doOptionsHeader(); ?>
 
@@ -28,11 +28,11 @@
     </div>
     <?php $repositories = $this->getRepositories(); ?>
     <?php foreach( $repositories as $num => $repoInfo ) { ?>
+        <?php if ( $repoInfo->releases && count( $repoInfo->releases ) ) { ?>
         <div class="one-repo">
             <h2 class="repo"><a href="<?php esc_attr_e( $repoInfo->repository->repoUrl ); ?>" target="_blank"><?php echo esc_html( $repoInfo->info->pluginName ); ?></a></h2>
             <div class="repo-loc"><?php echo esc_html( $repoInfo->repository->fullName ); ?></div>
         
-        <?php if ( $repoInfo->releases && count( $repoInfo->releases ) ) { ?>
             <table class="repo-table striped wp-list-table widefat releases" role="presentation">
                 <thead>
                     <tr>
@@ -63,13 +63,12 @@
                         <?php } else { ?>
                             <td class="yesno"><span class="red"><?php _e( 'No', 'juniper' ); ?></span></td>
                         <?php } ?>
+                        <td></td>
                     </tr>
                 <?php } ?>
                 </tbody>
             </table>
-        <?php } else { ?>
-            <p><?php _e( 'This repository does not have any releases to display.', 'juniper' ); ?></p>
-        <?php } ?>
         </div>
+        <?php } ?>
     <?php }?> 
 </div>
