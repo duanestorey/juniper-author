@@ -413,7 +413,7 @@ class JuniperAuthor extends GithubUpdater {
                                     if ( $releases ) {
                                         $decodedReleases = json_decode( $releases );
 
-                                        $oneRepo->releases = $this->parseRelevantReleaseInfo( $decodedReleases );
+                                        $oneRepo->releases = $this->parseRelevantReleaseInfo( $oneRepo, $decodedReleases );
                                     }
                                 }
 
@@ -642,6 +642,8 @@ class JuniperAuthor extends GithubUpdater {
         $newRepoInfo->starsCount = $repoInfo->stargazers_count;
         $newRepoInfo->hasIssues = $repoInfo->has_issues;
 
+        $newRepoInfo->primaryBranch = $repoInfo->default_branch;
+
         return $newRepoInfo;
     }
 
@@ -670,7 +672,7 @@ class JuniperAuthor extends GithubUpdater {
         return $returnIssues;
     }
 
-    public function parseRelevantReleaseInfo( $releases ) {
+    public function parseRelevantReleaseInfo( $repo, $releases ) {
         $returnReleases  = [];
 
         foreach( $releases as $num => $release ) {
@@ -692,6 +694,8 @@ class JuniperAuthor extends GithubUpdater {
                 $newRelease->downloadUrl = $release->assets[ 0 ]->browser_download_url;
                 $newRelease->downloadSize = $release->assets[ 0 ]->size;
                 $newRelease->downloadCount = $release->assets[ 0 ]->download_count;
+            } else {    
+                $newRelease->downloadUrl = 'https://github.com/' . $repo->fullName . '/archive/refs/tags/' . $newRelease->tag . '.zip';
             }
 
             $newRelease->postedBy = new \stdClass;
