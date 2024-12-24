@@ -695,7 +695,7 @@ class JuniperAuthor extends GithubUpdater {
                 $newRelease->downloadSize = $release->assets[ 0 ]->size;
                 $newRelease->downloadCount = $release->assets[ 0 ]->download_count;
             } else {    
-                $newRelease->downloadUrl = 'https://github.com/' . $repo->fullName . '/archive/refs/tags/' . $newRelease->tag . '.zip';
+                $newRelease->downloadUrl = 'https://github.com/' . $repo->repository->fullName . '/archive/refs/tags/' . $newRelease->tag . '.zip';
             }
 
             $newRelease->postedBy = new \stdClass;
