@@ -7,6 +7,7 @@
 
     <?php $repoInfo = $this->getSetting( 'repositories' ); ?>
 
+    <?php if ( $this->getSetting( 'private_key' ) ) { ?>
     <div class="sign-area">
         <h2><?php _e( 'Sign Packages', 'juniper' ); ?></h2>
 
@@ -26,6 +27,7 @@
             <div class="bar">10%</div>
         </div> 
     </div>
+    <?php } ?>
     <?php $repositories = $this->getRepositories(); ?>
     <?php foreach( $repositories as $num => $repoInfo ) { ?>
         <?php if ( $repoInfo->releases && count( $repoInfo->releases ) ) { ?>
