@@ -25,19 +25,38 @@ class Utils {
         return $this->curlRequest( $url, $headers );
     }
 
-    public function curlRequest( $url, $headers = false ) {
-        $ch = \curl_init();
-        \curl_setopt( $ch, CURLOPT_URL, $url );
-        \curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        \curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
-        \curl_setopt( $ch, CURLOPT_TIMEOUT, 10000 );
+    public function curlPostRequest( $url, $postFields = [], $headers = [] ) {
+        $ch = curl_init();
+        curl_setopt( $ch, CURLOPT_URL, $url );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
+        curl_setopt( $ch, CURLOPT_POST, true );
+        curl_setopt( $ch, CURLOPT_POSTFIELDS, $postFields );
+        curl_setopt( $ch, CURLOPT_TIMEOUT, 10000 );
 
         if ( $headers ) {
-            \curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
+            curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
         }
         
-        \curl_setopt( $ch, CURLOPT_USERAGENT, Utils::USER_AGENT );
-        $response = \curl_exec( $ch );
+        curl_setopt( $ch, CURLOPT_USERAGENT, Utils::USER_AGENT );
+        $response = curl_exec( $ch );
+        
+        return $response;
+    }
+  
+    public function curlRequest( $url, $headers = false ) {
+        $ch = curl_init();
+        curl_setopt( $ch, CURLOPT_URL, $url );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
+        curl_setopt( $ch, CURLOPT_TIMEOUT, 10000 );
+
+        if ( $headers ) {
+            curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
+        }
+        
+        curl_setopt( $ch, CURLOPT_USERAGENT, Utils::USER_AGENT );
+        $response = curl_exec( $ch );
         
         return $response;
     }

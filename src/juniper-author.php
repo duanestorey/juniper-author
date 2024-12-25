@@ -18,9 +18,11 @@ require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/utils.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/github-updater.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/settings.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/wordpress.php' );
+require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/debug.php' );
 
 class JuniperAuthor extends GithubUpdater {
     private static $instance = null;
+    public const UPDATE_REPO_TIME = 2*60;
 
     protected $settings = null;
     protected $utils = null;
@@ -28,6 +30,8 @@ class JuniperAuthor extends GithubUpdater {
     protected function __construct() {
         $this->settings = new Settings( $this );
         $this->utils = new Utils( $this->settings );
+
+        DebugLog::instance()->enable( $this->settings->getSetting( 'debug_file_enabled' ) );
 
         // Plugin action links
         add_filter( 'plugin_action_links_' . plugin_basename( JUNIPER_AUTHOR_MAIN_FILE ), array( $this, 'add_action_links' ) );
@@ -51,7 +55,45 @@ class JuniperAuthor extends GithubUpdater {
 
     public function init() {
         $this->settings->init();
+
+        $this->checkForRepoUpdate();
     }
+
+
+    public function checkForRepoUpdate() {
+        if ( !wp_doing_ajax() ) {
+            DEBUG_LOG( "Checking to see if it is time to update the repo" );
+            if (  time() > ( $this->settings->getSetting( 'last_repo_update_time' ) + JuniperAuthor::UPDATE_REPO_TIME ) ) {
+                DEBUG_LOG( "...time to update the repo, triggering magic AJAX request" );
+
+                $postFields = [
+                    'action' => 'handle_ajax',
+                    'juniper_action' => 'update_repo',
+                    'juniper_nonce' => wp_create_nonce( 'juniper' )
+                ];
+
+                $cookies = [];
+				foreach ( $_COOKIE as $name => $value ) {
+					$cookies[] = "$name=" . urlencode( is_array( $value ) ? serialize( $value ) : $value );
+				}
+
+                // Inspired by the wp-async-task plugin
+                $request_args = array(
+					'timeout'   => 0.1,
+					'blocking'  => false,
+					'sslverify' => apply_filters( 'https_local_ssl_verify', true ),
+					'body'      => $postFields,
+					'headers'   => array(
+						'cookie' => implode( '; ', $cookies ),
+					),
+				);
+
+                $this->settings->setSetting( 'last_repo_update_time', time() );
+                wp_remote_post( admin_url( 'admin-ajax.php' ), $request_args );
+            }
+        }
+    }
+
 
     public function getReleaseFromRepoAndTag( $repoName, $tagName ) {
         $repositories = $this->getRepositories();
@@ -245,6 +287,193 @@ class JuniperAuthor extends GithubUpdater {
         return $verifyResult; 
     }
 
+    public function doRefreshStage( $stage ) {
+        $response = new \stdClass;
+        $response->pass = 0;
+        $response->done = 0;
+        $response->msg = '';
+        $response->next_stage = 0;
+
+        switch( $stage ) {
+            case 0:
+                // update repositories
+                DEBUG_LOG( "Starting repository refresh, updating repository list" );
+                $orgInfo = 'https://api.github.com/user/repos';
+                $result = $this->utils->curlGitHubRequest( $orgInfo );
+                if ( $result ) {
+                    $decodedResult = json_decode( $result );
+                    
+                    $this->settings->setSetting( 'ajax_repos', $decodedResult );
+                    /* translators: this is the number of found repositories */
+                    $response->msg = '...' . sprintf( __( 'Found %d respositories', 'juniper' ), count( $decodedResult ) );
+                    $response->pass = 1;
+                    $response->next_stage = 1;
+                } 
+                break;
+            case 1:
+                DEBUG_LOG( "...Looking for WordPress plugins" );
+                $repos = $this->settings->getSetting( 'ajax_repos' );
+                if ( $repos ) {
+                    $newRepos = [];
+                    foreach( $repos as $oneRepo ) {
+                        // Skip private repos for now since we are using authenticated requests
+                        if ( $oneRepo->private ) {
+                            continue;
+                        }
+
+                        $possiblePluginFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . basename( $oneRepo->full_name ) . '.php';
+                        if ( !$this->utils->curlRemoteFileExists( $possiblePluginFile ) ) {
+                            continue;
+                        }
+
+                        $newRepos[] = $oneRepo;
+                    }
+
+                    $response->msg = '...' . sprintf( __( 'Detected %d valid and non-private respositories for inclusion' ), count( $newRepos ) );
+                    $response->pass = 1;
+                    $response->next_stage = 2;
+
+                    $this->settings->setSetting( 'ajax_repos', $newRepos );
+                }
+                break;
+            case 2:
+                DEBUG_LOG( "...Fetching plugin header and README.md files" );
+                $repos = $this->settings->getSetting( 'ajax_repos' );
+                if ( $repos ) {
+                    $assembledData = [];
+                    $wordPress = new WordPress( $this->utils );
+
+                    foreach( $repos as $oneRepo ) {
+                        // we already know it's valid
+                        $pluginFileName = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . basename( $oneRepo->full_name ) . '.php';
+                        $pluginFile = $this->utils->curlGitHubRequest( $pluginFileName );
+     
+                        $pluginInfo = $wordPress->parseReadmeHeader( $pluginFile );  
+
+                        $pluginInfo->readme = '';
+                        $pluginInfo->readmeHtml = '';
+
+                        $readmeFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/README.md';
+
+                        if ( $this->utils->curlRemoteFileExists( $readmeFile ) ) {
+                            require_once( JUNIPER_AUTHOR_PATH . '/vendor/autoload.php' );
+
+                            $parsedown = new \Parsedown();
+                            $pluginInfo->readme = $this->utils->curlGitHubRequest( $readmeFile );
+                            $pluginInfo->readmeHtml = $parsedown->text( $pluginInfo->readme );
+                        }
+
+                        $oneClass = new \stdClass;
+                        $oneClass->info = $pluginInfo;
+                        $oneClass->repository = $this->parseRelevantRepoInfo( $oneRepo );
+
+                        $assembledData[] = $oneClass;     
+                    }
+
+                    $response->msg = '...' . sprintf( __( 'Plugin headers parsed and README.md data loaded', 'juniper' ) );
+                    $response->next_stage = 3;
+                    $response->pass = 1;
+
+                    $this->settings->setSetting( 'ajax_update_data', $assembledData );
+                }
+                break;
+            case 3:
+                DEBUG_LOG( "...Fetching banner images" );
+                $repos = $this->settings->getSetting( 'ajax_update_data' );
+                if ( $repos ) {
+                    $assembledData = [];
+
+                    foreach( $repos as $oneRepo ) {
+                        $oneRepo->info->bannerImage = '';
+                        $oneRepo->info->bannerImageLarge = '';
+
+                        $testBannerImage = 'https://raw.githubusercontent.com/' . $oneRepo->repository->fullName . '/refs/heads/' . $oneRepo->repository->primaryBranch . '/assets/banner-1544x500.jpg';
+                        if ( $this->utils->curlRemoteFileExists( $testBannerImage ) ) {
+                            $oneRepo->info->bannerImageLarge = $testBannerImage;
+                            $oneRepo->info->bannerImage = $testBannerImage;
+                        }
+
+                        $assembledData[] = $oneRepo;
+                    }
+
+                    $response->msg = '...' . sprintf( __( 'Banner images loaded', 'juniper' ) );
+                    $response->next_stage = 4;
+                    $response->pass = 1;
+
+                    $this->settings->setSetting( 'ajax_update_data', $assembledData );
+                }
+                break;
+            case 4:
+                DEBUG_LOG( "...Loading repository issues" );
+                $repos = $this->settings->getSetting( 'ajax_update_data' );
+                if ( $repos ) {
+                    $assembledData = [];
+                    foreach( $repos as $oneRepo ) {
+                        // get issues
+                        $issuesUrl = 'https://api.github.com/repos/' . $oneRepo->repository->fullName . '/issues?state=all';
+
+                        $oneRepo->issues = [];
+                        $issues = $this->utils->curlGitHubRequest( $issuesUrl );
+                        if ( $issues ) {
+                            $decodedIssues = json_decode( $issues );
+
+                            $oneRepo->issues = $this->parseRelevantIssueInfo( $decodedIssues );
+                        }
+
+                        $assembledData[] = $oneRepo;
+                    }
+
+                    $this->settings->setSetting( 'ajax_update_data', $assembledData );
+
+                    $response->msg = '...' . sprintf( __( 'All Github issues loaded', 'juniper' ) );
+                    $response->pass = 1;
+                    $response->next_stage = 5;
+                }
+                break;
+            case 5:
+                DEBUG_LOG( "...Loading repository releases" );
+                $repos = $this->settings->getSetting( 'ajax_update_data' );
+                if ( $repos ) {
+                    foreach( $repos as $oneRepo ) {
+                        // get releases
+                        $releasesUrl = 'https://api.github.com/repos/' . $oneRepo->repository->fullName . '/releases';
+
+                        $oneRepo->releases = [];
+                        $releases = $this->utils->curlGitHubRequest( $releasesUrl );
+                        if ( $releases ) {
+                            $decodedReleases = json_decode( $releases );
+
+                            $oneRepo->releases = $this->parseRelevantReleaseInfo( $oneRepo, $decodedReleases );
+                        }
+                    }
+
+                    // update the main data
+                    $this->settings->setSetting( 'repositories', $repos );
+
+                    $response->msg = '...' . sprintf( __( 'All Github releases loaded', 'juniper' ) );
+                    $response->next_stage = 0;
+                    $response->pass = 1;
+                    $response->done = 1;
+
+                    DEBUG_LOG( "Repository update complete" );
+                }
+                break;
+            case 10:
+                DEBUG_LOG( "Starting partial repository updates" );
+                // hack to start at a later stage
+                $repos = $this->settings->getSetting( 'repositories' );
+                $this->settings->setSetting( 'ajax_update_data', $repos );
+                $response->msg = '...' . sprintf( __( 'merging in previous data', 'juniper' ) );
+                $response->next_stage = 3;
+                $response->pass = 1;
+                break;
+            default:
+                break;
+        }
+
+        return $response;
+    }
+
     public function handleAjax() {
         $action = $_POST[ 'juniper_action' ];
         $nonce = $_POST[ 'juniper_nonce' ];
@@ -254,6 +483,10 @@ class JuniperAuthor extends GithubUpdater {
 
         if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
             switch( $action ) {
+                case 'update_repo':
+                    DEBUG_LOG( "...Magic AJAX request received" );
+                    add_action( 'shutdown', array( $this, 'handleRefreshOnShutdown' ) );
+                    break;
                 case 'remove_image':
                     $image = $_POST[ 'image' ];
 
@@ -283,167 +516,43 @@ class JuniperAuthor extends GithubUpdater {
                 case 'ajax_refresh':
                     $stage = $_POST[ 'stage' ];
                     $response->done = 0;
+                    $response->stage = $stage;
+                    $response->result = '';
 
                     switch( $stage ) {
                         case 0:
-                            // update repositories
-                            $orgInfo = 'https://api.github.com/user/repos';
-                            $result = $this->utils->curlGitHubRequest( $orgInfo );
-                            if ( $result ) {
-                                $decodedResult = json_decode( $result );
-                                $this->settings->setSetting( 'ajax_repos', $decodedResult );
-                                /* translators: this is the number of found repositories */
-                                $response->msg = '...' . sprintf( __( 'Found %d respositories', 'juniper' ), count( $decodedResult ) );
-                                $response->pass = 1;
-                                $response->next_stage = 1;
-                            } else {
-                                $response->pass = 0;
-                            }
+                            $result = $this->doRefreshStage( 0 );
+                            $response->result = $result;
                             break;
                         case 1:
-                            $response->pass = 0;
-                            $repos = $this->settings->getSetting( 'ajax_repos' );
-                            if ( $repos ) {
-                                $newRepos = [];
-                                foreach( $repos as $oneRepo ) {
-                                    // Skip private repos for now since we are using authenticated requests
-                                    if ( $oneRepo->private ) {
-                                        continue;
-                                    }
-
-                                    $possiblePluginFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . basename( $oneRepo->full_name ) . '.php';
-                                    if ( !$this->utils->curlRemoteFileExists( $possiblePluginFile ) ) {
-                                        continue;
-                                    }
-
-                                    $newRepos[] = $oneRepo;
-                                }
-
-                                $response->msg = '...' . sprintf( __( 'Detected %d valid and non-private respositories for inclusion' ), count( $newRepos ) );
-                                $response->pass = 1;
-                                $response->next_stage = 2;
-
-                                $this->settings->setSetting( 'ajax_repos', $newRepos );
-                            }
+                            $result = $this->doRefreshStage( 1 );
+                            $response->result = $result;
                             break;
                         case 2:
-                            $response->pass = 0;
-                            $repos = $this->settings->getSetting( 'ajax_repos' );
-                            if ( $repos ) {
-                                $assembledData = [];
-
-                                foreach( $repos as $oneRepo ) {
-                                    // we already know it's valid
-                                    $pluginFileName = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . basename( $oneRepo->full_name ) . '.php';
-                                    $pluginFile = $this->utils->curlGitHubRequest( $pluginFileName );
-
-                                    $wordPress = new WordPress( $this->utils );
-                                    
-                                    $pluginInfo = $wordPress->parseReadmeHeader( $pluginFile );
-
-                                    $pluginInfo->bannerImage = '';
-                                    $pluginInfo->bannerImageLarge = '';
-
-                                    $testBannerImage = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/assets/banner-1544x500.jpg';
-                                    if ( $this->utils->curlRemoteFileExists( $testBannerImage ) ) {
-                                        $pluginInfo->bannerImageLarge = $testBannerImage;
-                                        $pluginInfo->bannerImage = $testBannerImage;
-                                    }
-
-                                    $pluginInfo->readme = '';
-                                    $pluginInfo->readmeHtml = '';
-
-                                    $readmeFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/README.md';
-
-                                    if ( $this->utils->curlRemoteFileExists( $readmeFile ) ) {
-                                        require_once( JUNIPER_AUTHOR_PATH . '/vendor/autoload.php' );
-
-                                        $parsedown = new \Parsedown();
-                                        $pluginInfo->readme = $this->utils->curlGitHubRequest( $readmeFile );
-                                        $pluginInfo->readmeHtml = $parsedown->text( $pluginInfo->readme );
-                                    }
-
-                                    $oneClass = new \stdClass;
-                                    $oneClass->info = $pluginInfo;
-                                    $oneClass->repository = $this->parseRelevantRepoInfo( $oneRepo );
-
-                                    $assembledData[] = $oneClass;
-                                }
-
-                                $response->msg = '...' . sprintf( __( 'Plugin headers parsed and README.md data loaded', 'juniper' ) );
-                                $response->pass = 1;
-                                $response->next_stage = 3;
-
-                                $this->settings->setSetting( 'ajax_update_data', $assembledData );
-                            }
+                            $result = $this->doRefreshStage( 2 );
+                            $response->result = $result;
                             break;
                         case 3:
-                            $response->pass = 0;
-                            $repos = $this->settings->getSetting( 'ajax_update_data' );
-                            if ( $repos ) {
-                                foreach( $repos as $oneRepo ) {
-                                    // get issues
-                                    $issuesUrl = 'https://api.github.com/repos/' . $oneRepo->repository->fullName . '/issues?state=all';
-
-                                    $oneRepo->issues = [];
-                                    $issues = $this->utils->curlGitHubRequest( $issuesUrl );
-                                    if ( $issues ) {
-                                        $decodedIssues = json_decode( $issues );
-
-                                        $oneRepo->issues = $this->parseRelevantIssueInfo( $decodedIssues );
-                                    }
-                                }
-
-                                $this->settings->setSetting( 'ajax_update_data', $repos );
-
-                                $response->msg = '...' . sprintf( __( 'All Github issues loaded', 'juniper' ) );
-                                $response->pass = 1;
-                                $response->next_stage = 4;
-                            }
+                            $result = $this->doRefreshStage( 3 );
+                            $response->result = $result;
                             break;
                         case 4:
-                            $response->pass = 0;
-                            $repos = $this->settings->getSetting( 'ajax_update_data' );
-                            if ( $repos ) {
-                                foreach( $repos as $oneRepo ) {
-                                    // get releases
-                                    $releasesUrl = 'https://api.github.com/repos/' . $oneRepo->repository->fullName . '/releases';
-
-                                    $oneRepo->releases = [];
-                                    $releases = $this->utils->curlGitHubRequest( $releasesUrl );
-                                    if ( $releases ) {
-                                        $decodedReleases = json_decode( $releases );
-
-                                        $oneRepo->releases = $this->parseRelevantReleaseInfo( $oneRepo, $decodedReleases );
-                                    }
-                                }
-
-                                // update the main data
-                                $this->settings->setSetting( 'repositories', $repos );
-
-                                $response->msg = '...' . sprintf( __( 'All Github releases loaded', 'juniper' ) );
-                                $response->pass = 1;
-                                $response->next_stage = 0;
-                                $response->done = 1;
-                            }
+                            $result = $this->doRefreshStage( 4 );
+                            $response->result = $result;
                             break;
+                         case 5:
+                            $result = $this->doRefreshStage( 5 );
+                            $response->result = $result;
+                            break;    
                         case 10:
-                            // hack to start at a later stage
-                            $repos = $this->settings->getSetting( 'repositories' );
-                            $this->settings->setSetting( 'ajax_update_data', $repos );
-                            $response->msg = '...' . sprintf( __( 'merging in previous data', 'juniper' ) );
-                            $response->pass = 1;
-                            $response->next_stage = 3;
-                            $response->done = 0;
+                            $result = $this->doRefreshStage( 10 );
+                            $response->result = $result;
                             break;
                         default:
                             $response->pass = 0;
-
                             break;
-                    }
+                    }  
                     
-                    $response->stage = $stage;
-                    $response->result = '';
                     break;
             }
         }
@@ -451,6 +560,28 @@ class JuniperAuthor extends GithubUpdater {
         echo json_encode( $response );
 
         wp_die();
+    }
+
+    public function handleRefreshOnShutdown() {
+        DEBUG_LOG( "...handling refresh on PHP shutdown hook" );
+
+        $result = $this->doRefreshStage( 0 );
+        if ( $result->pass ) {
+            $result = $this->doRefreshStage( 1 );
+            if ( $result->pass ) {
+                $result = $this->doRefreshStage( 2 );
+                if ( $result->pass ) { 
+                    $result = $this->doRefreshStage( 3 );
+                    if ( $result->pass ) {
+                        $result = $this->doRefreshStage( 4 );
+
+                        if ( $result->pass ) {
+                            $result = $this->doRefreshStage( 5 );
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public function getPublicKey() {

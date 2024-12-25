@@ -46,6 +46,24 @@ function juniperAjaxRefreshDone() {
     );
 }
 
+function handleAjaxRefreshResponse( response ) {
+    alert( response );
+    var decodedResponse = jQuery.parseJSON( response );
+    juniperUpdateDebugBox( decodedResponse.result.msg );
+
+    if ( decodedResponse.result.pass ) {
+        if ( decodedResponse.result.done ) {
+             juniperAjaxRefreshDone();
+        } else {
+            var params = {
+                stage: decodedResponse.result.next_stage 
+            }
+
+            juniperAjax( 'ajax_refresh', params, handleAjaxRefreshResponse );
+        }
+    }
+}
+
 function juniperAjaxRefreshRepos( startStage ) {
     jQuery( "#debug-area" ).show();
 
@@ -57,60 +75,7 @@ function juniperAjaxRefreshRepos( startStage ) {
         stage: startStage 
     }
 
-    juniperAjax( 'ajax_refresh', params, function( response ) { 
-        var decodedResponse = jQuery.parseJSON( response );
-        juniperUpdateDebugBox( decodedResponse.msg );
-
-        if ( decodedResponse.pass ) {
-            // stage 1, figuring out if they are valid plugins or themes
-            params.stage = decodedResponse.next_stage;
-            juniperAjax( 'ajax_refresh', params, function( response ) { 
-                decodedResponse = jQuery.parseJSON( response );
-                juniperUpdateDebugBox( decodedResponse.msg );
-
-                if ( decodedResponse.pass ) {
-                    // stage 2, loading plugin data & readmes
-                    params.stage = decodedResponse.next_stage;
-                    juniperAjax( 'ajax_refresh', params, function( response ) { 
-                        decodedResponse = jQuery.parseJSON( response );
-                        juniperUpdateDebugBox( decodedResponse.msg );
-
-                        if ( decodedResponse.pass && !decodedResponse.done) {
-                            // stage 3, loading issues
-                            params.stage = decodedResponse.next_stage;
-                            juniperAjax( 'ajax_refresh', params, function( response ) { 
-                                decodedResponse = jQuery.parseJSON( response );
-                                juniperUpdateDebugBox( decodedResponse.msg );
-
-                                if ( decodedResponse.pass && !decodedResponse.done ) {
-                                    // stage 4, loading releases
-                                    params.stage = decodedResponse.next_stage;
-
-                                    juniperAjax( 'ajax_refresh', params, function( response ) { 
-                                        decodedResponse = jQuery.parseJSON( response );
-
-                                        juniperUpdateDebugBox( decodedResponse.msg );
-
-                                        if ( decodedResponse.done == 1 ) {
-                                            juniperAjaxRefreshDone();
-                                        }
-                                    });
-                                }
-
-                                if ( decodedResponse.done == 1) {
-                                    juniperAjaxRefreshDone();
-                                }
-                            });
-                        }
-
-                        if ( decodedResponse.done == 1) {
-                            juniperAjaxRefreshDone();
-                        }
-                    });
-                }
-            });
-        }
-    });
+    juniperAjax( 'ajax_refresh', params, handleAjaxRefreshResponse );
 }
 
 function juniperBegin() {

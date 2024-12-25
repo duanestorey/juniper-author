@@ -4,3 +4,4 @@ releases
 composer.lock
 package-lock.json
 dist/mix-manifest.json
+debug
