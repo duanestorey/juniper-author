@@ -47,7 +47,6 @@ function juniperAjaxRefreshDone() {
 }
 
 function handleAjaxRefreshResponse( response ) {
-    alert( response );
     var decodedResponse = jQuery.parseJSON( response );
     juniperUpdateDebugBox( decodedResponse.result.msg );
 

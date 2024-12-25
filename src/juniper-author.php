@@ -61,7 +61,7 @@ class JuniperAuthor extends GithubUpdater {
 
 
     public function checkForRepoUpdate() {
-        if ( !wp_doing_ajax() ) {
+        if ( !wp_doing_ajax() && $this->settings->getSetting( 'github_token' ) ) {
             DEBUG_LOG( "Checking to see if it is time to update the repo" );
             if (  time() > ( $this->settings->getSetting( 'last_repo_update_time' ) + JuniperAuthor::UPDATE_REPO_TIME ) ) {
                 DEBUG_LOG( "...time to update the repo, triggering magic AJAX request" );
@@ -830,8 +830,11 @@ class JuniperAuthor extends GithubUpdater {
                 $newRelease->downloadUrl = $release->assets[ 0 ]->browser_download_url;
                 $newRelease->downloadSize = $release->assets[ 0 ]->size;
                 $newRelease->downloadCount = $release->assets[ 0 ]->download_count;
+                
+                $newRelease->downloadUpdatedTime = strtotime( $release->assets[ 0 ]->updated_at );
             } else {    
                 $newRelease->downloadUrl = 'https://github.com/' . $repo->repository->fullName . '/archive/refs/tags/' . $newRelease->tag . '.zip';
+                $newRelease->downloadUpdatedTime = strtotime( $release->published_at );
             }
 
             $newRelease->postedBy = new \stdClass;

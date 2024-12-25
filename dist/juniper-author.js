@@ -47,7 +47,6 @@ function juniperAjaxRefreshDone() {
   }, 2000);
 }
 function handleAjaxRefreshResponse(response) {
-  alert(response);
   var decodedResponse = jQuery.parseJSON(response);
   juniperUpdateDebugBox(decodedResponse.result.msg);
   if (decodedResponse.result.pass) {
