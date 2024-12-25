@@ -64,16 +64,17 @@ class Settings {
                 array(
                     $this->addSetting( 'text', 'github_token', __( 'Github Token', 'juniper' ) ),
                     $this->addSetting( 'text', 'mirror_url', __( 'Juniper/Server URL', 'juniper' ) ),
+                    $this->addSetting( 'checkbox', 'debug_file_enabled', __( 'Enable writing a debug file', 'juniper' ) ),
                 )
             );
-
 
             $this->addSettingsSection( 
                 $this->settingsPages[ 'options' ],
                 'Repository', 
                 __( 'Repository', 'juniper' ),
                 array(
-                    $this->addSetting( 'image', 'banner_image', sprintf( __( 'Default Repository Banner Image (ideally %dx%d, but it will be resized automatically)', 'juniper' ), JUNIPER_AUTHOR_BANNER_WIDTH, JUNIPER_AUTHOR_BANNER_HEIGHT ) ),
+                    /* translators: this is the width and height of an image */
+                    $this->addSetting( 'image', 'banner_image', sprintf( __( 'Default repository banner image (ideally %1$dx%2$d, but it will be resized automatically)', 'juniper' ), JUNIPER_AUTHOR_BANNER_WIDTH, JUNIPER_AUTHOR_BANNER_HEIGHT ) )
                 )
             );           
 
@@ -375,6 +376,8 @@ class Settings {
         $settings->banner_image = false;
         $settings->banner_image_small = false;
 
+        $settings->debug_file_enabled = 0;
+
         // for ajax updates
         $settings->ajax_repos = [];
         $settings->ajax_update_data = [];
@@ -439,9 +442,10 @@ class Settings {
 
         $openIssues = count( $this->getOpenIssues() );
         if ( $openIssues ) {
-            $issueTitle = sprintf(__( '%s Open Issues', 'juniper' ), '<span class="awaiting-mod"> ' . count( $this->getOpenIssues() ) . '</span>' );
+            /* translators: This is a string representing the number of open issues */
+            $issueTitle = sprintf(__( '%s Manage Issues', 'juniper' ), '<span class="awaiting-mod"> ' . count( $this->getOpenIssues() ) . '</span>' );
         } else {
-            $issueTitle = __( 'Open Issues', 'juniper' );
+            $issueTitle = __( 'Manage Issues', 'juniper' );
         }
 
         add_submenu_page(

@@ -64,7 +64,8 @@
     </form>
 
     <?php } else { ?>
-        <p><?php echo sprintf( __( 'Please configure your Github token in the %sAuthorship Options%s area first.', 'juniper' ), '<a href="' . admin_url( 'admin.php?page=juniper-options' ) . '">', '</a>' ); ?></p>
+        <?php /* translators: can be ignored as it will be substituted with a hyperlink */ ?>
+        <p><?php echo sprintf( __( 'Please configure your Github token in the %1$sAuthorship Options%$2s area first.', 'juniper' ), '<a href="' . admin_url( 'admin.php?page=juniper-options' ) . '">', '</a>' ); ?></p>
     <?php } ?>
 
     <div id="debug-area" style="display: none">

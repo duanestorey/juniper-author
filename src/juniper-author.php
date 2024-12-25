@@ -292,6 +292,7 @@ class JuniperAuthor extends GithubUpdater {
                             if ( $result ) {
                                 $decodedResult = json_decode( $result );
                                 $this->settings->setSetting( 'ajax_repos', $decodedResult );
+                                /* translators: this is the number of found repositories */
                                 $response->msg = '...' . sprintf( __( 'Found %d respositories', 'juniper' ), count( $decodedResult ) );
                                 $response->pass = 1;
                                 $response->next_stage = 1;

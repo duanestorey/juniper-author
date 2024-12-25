@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Juniper/Author plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: Juniper/Author 1.0.0\n"
+"Project-Id-Version: Juniper/Author 1.11\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/juniper-author\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-12-21T07:08:20+00:00\n"
+"POT-Creation-Date: 2024-12-25T21:33:30+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: juniper\n"
@@ -21,7 +21,7 @@ msgstr ""
 
 #. Plugin URI of the plugin
 #: juniper-author.php
-msgid "https://github.com/nowporg/juniper-author"
+msgid "https://github.com/duanestorey/juniper-author"
 msgstr ""
 
 #. Description of the plugin
@@ -39,47 +39,147 @@ msgstr ""
 msgid "https://duanestorey.com"
 msgstr ""
 
-#: src/settings.php:39
-msgid "Add New Repository"
+#: src/juniper-author.php:271
+#: templates/releases.php:63
+msgid "Yes"
 msgstr ""
 
-#: src/settings.php:41
-msgid "Enter Github Repository URL"
+#. translators: this is the number of found repositories
+#: src/juniper-author.php:296
+msgid "Found %d respositories"
 msgstr ""
 
-#: src/settings.php:49
-msgid "Code Signing"
+#: src/juniper-author.php:373
+msgid "Plugin headers parsed and README.md data loaded"
 msgstr ""
 
-#: src/settings.php:51
-msgid "Private Key"
+#: src/juniper-author.php:399
+msgid "All Github issues loaded"
+msgstr ""
+
+#: src/juniper-author.php:424
+msgid "All Github releases loaded"
+msgstr ""
+
+#: src/juniper-author.php:434
+msgid "merging in previous data"
 msgstr ""
 
 #: src/settings.php:52
-msgid "Public Key"
+msgid "Code Signing"
 msgstr ""
 
 #: src/settings.php:54
+msgid "Private Key"
+msgstr ""
+
+#: src/settings.php:55
+msgid "Public Key"
+msgstr ""
+
+#: src/settings.php:56
 msgid "Delete keys (this is destructive, for testing only)"
 msgstr ""
 
-#: src/settings.php:276
+#: src/settings.php:63
+msgid "Options"
+msgstr ""
+
+#: src/settings.php:65
+msgid "Github Token"
+msgstr ""
+
+#: src/settings.php:66
+msgid "Juniper/Server URL"
+msgstr ""
+
+#: src/settings.php:67
+msgid "Enable writing a debug file"
+msgstr ""
+
+#: src/settings.php:74
+msgid "Repository"
+msgstr ""
+
+#. translators: this is the width and height of an image
+#: src/settings.php:77
+msgid "Default repository banner image (ideally %1$dx%2$d, but it will be resized automatically)"
+msgstr ""
+
+#: src/settings.php:84
+msgid "Scorched Earth Nuclear"
+msgstr ""
+
+#: src/settings.php:86
+msgid "Delete all settings and restore defaults (this is destructive, use with care)"
+msgstr ""
+
+#: src/settings.php:305
+msgid "Remove"
+msgstr ""
+
+#: src/settings.php:348
 msgid "Please ensure you set a DNS record for the URL of your signing-authority URL of type TXT for <strong>_wpsign</strong>, using your entire public key (not private) as the value"
 msgstr ""
 
-#: src/settings.php:322
-#: src/settings.php:323
+#: src/settings.php:436
+#: src/settings.php:437
 msgid "Manage Releases"
 msgstr ""
 
-#: src/settings.php:332
-#: src/settings.php:333
+#. translators: This is a string representing the number of open issues
+#: src/settings.php:446
+msgid "%s Manage Issues"
+msgstr ""
+
+#: src/settings.php:448
+msgid "Manage Issues"
+msgstr ""
+
+#: src/settings.php:453
+msgid "Open Issues"
+msgstr ""
+
+#: src/settings.php:462
+#: src/settings.php:463
 msgid "Repositories"
 msgstr ""
 
-#: src/settings.php:341
-#: src/settings.php:342
+#: src/settings.php:471
+#: src/settings.php:472
 msgid "Authorship Options"
+msgstr ""
+
+#: templates/issues.php:2
+msgid "Author/Issues"
+msgstr ""
+
+#: templates/issues.php:4
+msgid "You can view all open issues here."
+msgstr ""
+
+#: templates/issues.php:16
+msgid "Updated"
+msgstr ""
+
+#: templates/issues.php:17
+msgid "Repo"
+msgstr ""
+
+#: templates/issues.php:18
+msgid "Posted By"
+msgstr ""
+
+#: templates/issues.php:19
+msgid "Title"
+msgstr ""
+
+#: templates/issues.php:20
+msgid "Comments"
+msgstr ""
+
+#: templates/issues.php:37
+msgid "Congratulations, you have no open issues at this time."
 msgstr ""
 
 #: templates/options-page.php:2
@@ -87,35 +187,34 @@ msgid "Author/Options"
 msgstr ""
 
 #: templates/options-page.php:5
-msgid "You can configure the options for Juniper/Author here."
+msgid "You can configure the options for Juniper/Author here. Addional options will show after generating your private key."
 msgstr ""
 
-#: templates/options-page.php:32
-#: templates/releases.php:49
+#: templates/options-page.php:30
 msgid "Save Changes"
 msgstr ""
 
-#: templates/options-page.php:41
+#: templates/options-page.php:39
 msgid "Private Key Generation"
 msgstr ""
 
-#: templates/options-page.php:43
+#: templates/options-page.php:41
 msgid "Juniper requires a private cryptographic key to sign all releases. To create a private key pair, enter a password below and click generate. "
 msgstr ""
 
-#: templates/options-page.php:45
+#: templates/options-page.php:43
 msgid "This password will be required to sign all releases, and is never saved."
 msgstr ""
 
-#: templates/options-page.php:49
+#: templates/options-page.php:47
 msgid "Enter password to protect private key"
 msgstr ""
 
-#: templates/options-page.php:54
+#: templates/options-page.php:52
 msgid "Confirm password to protect private key"
 msgstr ""
 
-#: templates/options-page.php:62
+#: templates/options-page.php:60
 msgid "Generate Key Pair"
 msgstr ""
 
@@ -123,8 +222,52 @@ msgstr ""
 msgid "Author/Releases"
 msgstr ""
 
-#: templates/releases.php:26
-msgid "You can view and sign all releases here."
+#: templates/releases.php:4
+msgid "You can view and sign all releases here. If a repository does not show in this list, it is because it has no official Github releases associated with it."
+msgstr ""
+
+#: templates/releases.php:12
+msgid "Sign Packages"
+msgstr ""
+
+#: templates/releases.php:14
+msgid "To digitally sign the packages below, enter the passphrase for your private key and click Sign"
+msgstr ""
+
+#: templates/releases.php:20
+msgid "Enter password to use private key"
+msgstr ""
+
+#: templates/releases.php:41
+msgid "Tag"
+msgstr ""
+
+#: templates/releases.php:42
+msgid "Release Info"
+msgstr ""
+
+#: templates/releases.php:43
+msgid "Package"
+msgstr ""
+
+#: templates/releases.php:44
+msgid "Release Date"
+msgstr ""
+
+#: templates/releases.php:45
+msgid "Signed"
+msgstr ""
+
+#: templates/releases.php:46
+msgid "Actions"
+msgstr ""
+
+#: templates/releases.php:64
+msgid "Verify"
+msgstr ""
+
+#: templates/releases.php:66
+msgid "No"
 msgstr ""
 
 #: templates/repos.php:2
@@ -132,37 +275,34 @@ msgid "Author/Repositories"
 msgstr ""
 
 #: templates/repos.php:4
-msgid "You can manage your repositories here"
-msgstr ""
-
-#: templates/repos.php:11
-msgid "Name"
-msgstr ""
-
-#: templates/repos.php:12
-msgid "Type"
-msgstr ""
-
-#: templates/repos.php:13
-msgid "URL"
-msgstr ""
-
-#: templates/repos.php:14
-msgid "Latest"
+msgid "You can manage your Github repositories here."
 msgstr ""
 
 #: templates/repos.php:15
-msgid "Actions"
+msgid "Name"
 msgstr ""
 
-#: templates/repos.php:27
-msgid "Remove"
+#: templates/repos.php:16
+msgid "Type"
 msgstr ""
 
-#: templates/repos.php:28
-msgid "Refresh"
+#: templates/repos.php:17
+msgid "Description"
 msgstr ""
 
-#: templates/repos.php:54
-msgid "Add Repo"
+#: templates/repos.php:18
+msgid "Latest"
+msgstr ""
+
+#: templates/repos.php:19
+msgid "Issues"
+msgstr ""
+
+#: templates/repos.php:36
+msgid "If this is your first time viewing this page, please do a Full Refresh to import your Github repositories."
+msgstr ""
+
+#. translators: can be ignored as it will be substituted with a hyperlink
+#: templates/repos.php:68
+msgid "Please configure your Github token in the %1$sAuthorship Options%$2s area first."
 msgstr ""
