@@ -57,7 +57,7 @@
             </tbody>
         </table>
         <a href="admin.php?page=juniper-repos&juniper_action=refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="do-ajax button button-primary" data-stage="0" />Full Refresh (Repos/Issues/Releases)</a>
-        <a href="admin.php?page=juniper-repos&juniper_action=partial_refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="do-ajax button button-primary" data-stage="10" />Parial Refresh (Issues/Releases)</a>
+        <a href="admin.php?page=juniper-repos&juniper_action=partial_refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="do-ajax button button-primary" data-stage="10" />Partial Refresh (Issues/Releases)</a>
         <?php if ( $repos && count( $repos ) ) { ?>
         <a href="admin.php?page=juniper-repos&juniper_action=submit&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="button button-secondary" />Submit To Mirror</a>
         <?php } ?>

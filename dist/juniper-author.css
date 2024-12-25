@@ -54,6 +54,7 @@
 .issues .one-issue img {
   max-width: 48px;
   float: left;
+  margin-right: 5px;
 }
 .issues .one-issue td {
   vertical-align: middle;
