@@ -2,7 +2,7 @@
 /*
     Plugin Name: Juniper/Author
     Plugin URI: https://github.com/duanestorey/juniper-author
-    Banner: https://github.com/duanestorey/juniper-author/blob/main/assets/banner.jpg?raw=true
+    Banner: https://github.com/duanestorey/juniper-author/blob/main/assets/banner-1544x500.jpg?raw=true
     Description: Facilitates code signing and releases for WordPress add-ons using the Juniper release system for WordPress
     Author: Duane Storey
     Author URI: https://duanestorey.com
