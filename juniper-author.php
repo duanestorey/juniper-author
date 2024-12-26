@@ -9,7 +9,7 @@
     Version: 1.1.2
     Requires PHP: 8.0
     Requires at least: 6.0
-    Tested up to: 6.7
+    Tested up to: 6.8
     Update URI: https://github.com/duanestorey/juniper-author
     Text Domain: juniper
     Domain Path: /lang

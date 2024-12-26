@@ -80,7 +80,7 @@ class JuniperBerry {
         $response->name           = $this->updateInfo->pluginInfo->pluginName . ' &#128274;';
         $response->slug           = $this->pluginSlug;
         $response->version        = $this->updateInfo->latestRelease->tag;
-        $response->tested         = "6.8"; // $this->updateInfo->pluginInfo->testedUpTo;
+        $response->tested         = $this->updateInfo->pluginInfo->testedUpTo;
         $response->requires       = $this->updateInfo->pluginInfo->requiresAtLeast;
         $response->author         = $this->updateInfo->pluginInfo->author;
         $response->author_profile = $this->updateInfo->pluginInfo->authorUrl;
