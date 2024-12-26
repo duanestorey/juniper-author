@@ -380,7 +380,7 @@ class Settings {
         $settings->banner_image_small = false;
 
         $settings->debug_file_enabled = 0;
-        $settings->last_repo_update_time = 0;
+        $settings->last_repo_update_time = time();
 
         // for ajax updates
         $settings->ajax_repos = [];

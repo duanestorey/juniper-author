@@ -358,17 +358,19 @@ class JuniperAuthor extends JuniperBerry {
                                         $decodedFileList = json_decode( $result );
 
                                         $fileList = [];
-                                        foreach( $decodedFileList->tree as $num => $fileInfo ) {
-                                            if ( $fileInfo->path = 'index.php' ) {
-                                                continue;
-                                            }
+                                        if ( !empty( $decodedFileList->tree ) ) {
+                                            foreach( $decodedFileList->tree as $num => $fileInfo ) {
+                                                if ( $fileInfo->path = 'index.php' ) {
+                                                    continue;
+                                                }
 
-                                            if ( $fileInfo->type == 'blob' && strpos( $fileInfo->path, '.php' ) !== false ) {
-                                                $oneFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . $fileInfo->path;
-                                            
-                                                DEBUG_LOG( sprintf( ".........found possible plugin file at [%s]", $possiblePluginFile ) ); 
+                                                if ( $fileInfo->type == 'blob' && strpos( $fileInfo->path, '.php' ) !== false ) {
+                                                    $oneFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . $fileInfo->path;
+                                                
+                                                    DEBUG_LOG( sprintf( ".........found possible plugin file at [%s]", $possiblePluginFile ) ); 
 
-                                                $fileList[] = $oneFile;
+                                                    $fileList[] = $oneFile;
+                                                }
                                             }
                                         }
 
@@ -640,9 +642,6 @@ class JuniperAuthor extends JuniperBerry {
                     $response->verify = $this->verifyPackage( $package );
                     break;
                 case 'ajax_refresh':
-
-                    $isRefreshing = $this->settings->getSetting( 'repo_updating' );
-                    if ( !$isRefreshing ) {
                         $this->settings->setSetting( 'repo_updating', true );
 
                         $stage = $_POST[ 'stage' ];
@@ -694,7 +693,7 @@ class JuniperAuthor extends JuniperBerry {
                         }
                     
                         break;
-                    }
+                 
             }
         }
 
@@ -707,11 +706,7 @@ class JuniperAuthor extends JuniperBerry {
         DEBUG_LOG( "...handling refresh on PHP shutdown hook" );
 
         $isRefreshing = $this->settings->getSetting( 'repo_updating' );
-        if ( $isRefreshing ) {
-            return false;
-        } else {
-            $this->settings->setSetting( 'repo_updating', true );
-        }
+        $this->settings->setSetting( 'repo_updating', true );
 
         $result = $this->doRefreshStage( 0 );
         if ( $result->pass ) {
