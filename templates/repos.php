@@ -8,6 +8,8 @@
     <?php if ( $this->getSetting( 'github_token' ) ) { ?>
 
     <?php $repos = $this->getSetting( 'repositories' ); ?>
+    <?php $hiddenRepos = $this->getSetting( 'hidden_repos' ); ?>
+    <?php // print_r( $hiddenRepos ); ?>
     <?php if ( count ( $repos ) ) { ?>
     <table class="repo-table striped wp-list-table widefat" role="presentation">
         <thead>
@@ -17,20 +19,25 @@
                 <th class="center"><?php _e( 'Authority', 'juniper' ); ?></th>
                 <th class="desc"><?php _e( 'Description', 'juniper' ); ?></th>
                 <th class="center"><?php _e( 'Latest', 'juniper' ); ?></th>
+                <th class="center"><?php _e( 'Tested', 'juniper' ); ?></th>
                 <th class="center"><?php _e( 'Issues', 'juniper' ); ?></th>
+               
+                <th class="center"><?php _e( 'Actions', 'juniper' ); ?></th>
             </tr>
         </thead>
         <tbody>
             
-        <?php foreach( $repos as $name => $data ) { ?>
+        <?php foreach( $repos as $name => $data ) { ?>  
+            <?php if ( in_array( $data->repository->fullName, $hiddenRepos ) ) continue; ?>
+            <?php $name = ( !empty( $data->info->pluginName ) ? $data->info->pluginName : $data->info->themeName ); ?>
             <tr>
-                <td><a href="<?php echo esc_attr( $data->repository->repoUrl ); ?>" target="_blank"><?php echo esc_html( $data->info->pluginName ); ?></a</td>
+                <td><a href="<?php echo esc_attr( $data->repository->repoUrl ); ?>" target="_blank"><?php echo esc_html( $name ); ?></a</td>
                 <td><?php echo esc_html( ucfirst( $data->info->type ) ); ?></td>
                 <td class="center">
                     <?php if ( $data->info->signingAuthority ) { ?>
                     <?php _e( 'Yes', 'juniper' ); ?>
                     <?php } else { ?>
-                    <span class="info"><?php _e( 'No', 'juniper' ); ?></span>
+                    <span class=""><?php _e( 'No', 'juniper' ); ?></span>
                     <?php } ?>
                 </td>
                 <td>
@@ -43,7 +50,9 @@
                     <?php } ?>
                 </td>
                 <td class="center"><?php echo esc_html( $data->info->stableVersion ); ?></td>
+                <td class="center"><?php echo esc_html( $data->info->testedUpTo ); ?></td>
                 <td class="center"><?php echo esc_html( count( $data->issues ) ); ?></td>
+                <td class="center"><a href="#" class="remove-repo" data-repo="<?php esc_attr_e( $data->repository->fullName ); ?>"><?php _e( 'Remove', 'juniper' ); ?></a</td>
             </tr>
         <?php }?> 
         </tbody>
@@ -72,6 +81,19 @@
                 <?php }?> 
             </tbody>
         </table>
+
+            <?php if ( count( $hiddenRepos ) ) {  ?>   
+            <div class="hidden-repos">
+                <h2>Hidden Repositories</h2>
+                <ul>
+                <?php foreach( $hiddenRepos as $repo ) { ?>
+                    <li><?php esc_html_e( $repo ); ?> - <a href="#" class="restore-repo" data-repo="<?php esc_attr_e( $repo ); ?>"><?php _e( 'Restore', 'juniper' ); ?></a></li>
+                <?php } ?>
+                </ul>
+            <?php } ?> 
+            <br>
+            </div>
+
         <p><?php _e( 'To prevent duplicates in the repository, in a future release only plugins with a designated Authority header will be includled by that site.', 'junper' ); ?></p>
 
         <a href="admin.php?page=juniper-repos&juniper_action=refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="do-ajax button button-primary" data-stage="0" /><?php _e( 'Update Repository Info', 'juniper' ); ?></a>

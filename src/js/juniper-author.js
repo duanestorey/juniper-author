@@ -68,6 +68,7 @@ function juniperAjaxRefreshRepos( startStage ) {
 
     jQuery( '#repo_debug' ).val( '' );
     juniperUpdateDebugBox( 'Starting update process' );
+    juniperUpdateDebugBox( '...this may take a while so please do not refresh the page until finished' );
 
     var params = {
         // we will break up the update process ito stages
@@ -171,6 +172,32 @@ function juniperBegin() {
         }
 
         e.preventDefault();
+    });
+
+    jQuery( 'a.remove-repo' ).click( function( e ) {
+        e.preventDefault();
+
+        var params = {
+            'repo': jQuery( this ).attr( 'data-repo' )
+        };
+
+        var item = jQuery( this );
+        juniperAjax( 'remove_repo', params ,function( response ) {
+            item.parent().parent().remove();
+        });
+    });
+
+    jQuery( 'a.restore-repo' ).click( function( e ) {
+        e.preventDefault();
+
+        var params = {
+            'repo': jQuery( this ).attr( 'data-repo' )
+        };
+
+        var item = jQuery( this );
+        juniperAjax( 'restore_repo', params ,function( response ) {
+            location.href = location.href;
+        });
     });
 }
 

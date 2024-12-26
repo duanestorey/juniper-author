@@ -363,6 +363,7 @@ class Settings {
         $settings->new_repo_name = false;
 
         $settings->repositories = [];
+        $settings->hidden_repos = [];
         $settings->user_info = [];
 
         $settings->github_token = false;
@@ -384,6 +385,7 @@ class Settings {
         // for ajax updates
         $settings->ajax_repos = [];
         $settings->ajax_update_data = [];
+        $settings->repo_updating = false;
         $settings->ajax_stage = 0;
 
         return $settings;

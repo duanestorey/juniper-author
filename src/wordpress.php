@@ -16,14 +16,22 @@ class WordPress {
 
     function parseReadmeHeader( $readmeContents ) {
         $headers = [];
+        $repoInfo = false;
 
         if ( preg_match_all( '/(.*): (.*)/', $readmeContents, $matches ) ) {
+            $repoInfo = new \stdClass;
+
             foreach( $matches[ 1 ] as $key => $value ) {
                 $headers[ strtolower( trim( str_replace( ' * ', '', $value ) ) ) ] = trim( $matches[ 2 ][ $key ] );
             }
 
-            $repoInfo = new \stdClass;
-            $repoInfo->type = 'plugin';
+            if ( isset( $headers[ 'theme name' ] ) ) {
+                $repoInfo->type = 'theme';
+            } else if ( isset( $headers[ 'plugin name' ] ) ) {
+                $repoInfo->type = 'plugin';
+            } else {
+                return false;
+            }
 
             $repoInfo->requiresPHP = '';
             $repoInfo->authorUrl = '';
@@ -33,6 +41,7 @@ class WordPress {
 
             $mapping = array(
                 'plugin name' => 'pluginName',
+                'theme name' => 'themeName',
                 'stable' => 'stableVersion',
                 'version' => 'version',
                 'description' => 'description',
@@ -53,8 +62,8 @@ class WordPress {
             if ( empty( $repoInfo->stableVersion ) ) {
                 $repoInfo->stableVersion = $repoInfo->version;
             }
-
-            return $repoInfo;  
         }
+
+        return $repoInfo;  
     }
 }

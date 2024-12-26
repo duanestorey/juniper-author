@@ -33,7 +33,7 @@ class DebugLog {
 
         if ( $enable ) {
             $this->debugFilename = md5( home_url() . AUTH_KEY ) . '.txt';
-            $this->fileHandle = fopen( $this->debugDir . '/' . $this->debugFilename, 'w+t' );
+            $this->fileHandle = fopen( $this->debugDir . '/' . $this->debugFilename, 'a+t' );
         }
     }
 

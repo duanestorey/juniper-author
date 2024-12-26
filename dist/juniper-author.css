@@ -51,6 +51,7 @@
   margin-top: 10px;
   font-size: 10pt;
   margin-bottom: 0px;
+  display: none;
 }
 .juniper .center {
   text-align: center;

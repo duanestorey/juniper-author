@@ -12,7 +12,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 class JuniperBerry {
-    private const CACHE_TIME = ( 60 * 5 ); // 15 minutes
+    private const CACHE_TIME = ( 60 * 15 ); // 15 minutes
 
     protected $cacheModifier = null;
     protected $cacheKey = null;
@@ -120,16 +120,20 @@ class JuniperBerry {
         }
 
         if ( $this->updateInfo ) {
-            if ( true || 
-                version_compare( $this->currentVersion, $this->updateInfo->version, '<' ) && 
-                version_compare( $this->updateInfo->requires, get_bloginfo( 'version' ), '<=' ) && 
-                version_compare( $this->updateInfo->requiresPhp, PHP_VERSION, '<' ) 
+            $versionCompare = version_compare( $this->currentVersion, $this->updateInfo->pluginInfo->version, '<' );
+            $wpCompare = !empty( $this->updateInfo->pluginInfo->requires ) ? version_compare( $this->updateInfo->pluginInfo->requires, get_bloginfo( 'version' ), '<=' ) : true;
+            $phpCompare = !empty( $this->updateInfo->pluginInfo->requiresPhp ) ? version_compare( $this->updateInfo->pluginInfo->requiresPhp, PHP_VERSION, '<' )  : true;
+
+            if (
+                $versionCompare && 
+                $wpCompare && 
+                $phpCompare
             ) {
                 $response = new \stdClass;
 
                 $response->slug = basename( $this->pluginSlug, '.php' );
                 $response->plugin = $this->pluginSlug;
-                $response->new_version = '1.2.0'; //$this->updateInfo->latestRelease->tag;
+                $response->new_version = $this->updateInfo->latestRelease->tag;
                 $response->tested = $this->updateInfo->pluginInfo->testedUpTo;
                 $response->package = $this->updateInfo->latestRelease->downloadUrl;
 

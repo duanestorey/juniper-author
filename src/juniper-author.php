@@ -21,11 +21,9 @@ require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/wordpress.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/debug.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/juniper-berry.php' );
 
-
-
 class JuniperAuthor extends JuniperBerry {
     private static $instance = null;
-    public const UPDATE_REPO_TIME = 15*60;
+    public const UPDATE_REPO_TIME = 30*60;
 
     protected $settings = null;
     protected $utils = null;
@@ -298,14 +296,30 @@ class JuniperAuthor extends JuniperBerry {
             case 0:
                 // update repositories
                 DEBUG_LOG( "Starting repository refresh, updating repository list" );
-                $orgInfo = 'https://api.github.com/user/repos';
-                $result = $this->utils->curlGitHubRequest( $orgInfo );
-                if ( $result ) {
-                    $decodedResult = json_decode( $result );
-                    
-                    $this->settings->setSetting( 'ajax_repos', $decodedResult );
+                $allRepos = [];
+                $page = 1;
+                
+                while ( true ) {
+                    $orgInfo = 'https://api.github.com/user/repos?per_page=100&page=' . $page;
+                    $result = $this->utils->curlGitHubRequest( $orgInfo );
+                    if ( $result ) {
+                        $decodedResult = json_decode( $result );
+                        DEBUG_LOG( sprintf( "...requested page [%d]", count( $decodedResult ) ) );
+
+                        $allRepos = array_merge( $allRepos, $decodedResult );
+
+                        if ( $decodedResult && count( $decodedResult ) == 100 ) {
+                            $page++;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                if ( $allRepos && count( $allRepos ) ) {
+                    $this->settings->setSetting( 'ajax_repos', $allRepos );
                     /* translators: this is the number of found repositories */
-                    $response->msg = '...' . sprintf( __( 'Found %d respositories', 'juniper' ), count( $decodedResult ) );
+                    $response->msg = '...' . sprintf( __( 'Found %d respositories', 'juniper' ), count( $allRepos ) );
                     $response->pass = 1;
                     $response->next_stage = 1;
                 } 
@@ -315,21 +329,78 @@ class JuniperAuthor extends JuniperBerry {
                 $repos = $this->settings->getSetting( 'ajax_repos' );
                 if ( $repos ) {
                     $newRepos = [];
+                    $privateRepos = 0;
+
                     foreach( $repos as $oneRepo ) {
                         // Skip private repos for now since we are using authenticated requests
                         if ( $oneRepo->private ) {
+                            $privateRepos++;
+                            DEBUG_LOG( sprintf( "......skipping private repo [%s]", $oneRepo->full_name ) );
                             continue;
                         }
 
+
+                        DEBUG_LOG( "...Checking for main plugin file" );
                         $possiblePluginFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . basename( $oneRepo->full_name ) . '.php';
                         if ( !$this->utils->curlRemoteFileExists( $possiblePluginFile ) ) {
+                            DEBUG_LOG( "......Checking for main style file file" );
+                            $possibleThemeFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/style.css';
+                            if ( !$this->utils->curlRemoteFileExists( $possibleThemeFile ) ) {
+
+                                $possibleThemeFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/style.scss';
+                                if ( !$this->utils->curlRemoteFileExists( $possibleThemeFile ) ) {
+                                    DEBUG_LOG( "......can't find either, so looking at all files now" );
+
+                                    $fileListApi = 'https://api.github.com/repos/' . $oneRepo->full_name . '/git/trees/' . $oneRepo->default_branch;
+                                    DEBUG_LOG( "......contacting " . $fileListApi );
+                                    $result = $this->utils->curlGitHubRequest( $fileListApi );
+                                    if ( $result ) {
+                                        $decodedFileList = json_decode( $result );
+
+                                        $fileList = [];
+                                        foreach( $decodedFileList->tree as $num => $fileInfo ) {
+                                            if ( $fileInfo->path = 'index.php' ) {
+                                                continue;
+                                            }
+
+                                            if ( $fileInfo->type == 'blob' && strpos( $fileInfo->path, '.php' ) !== false ) {
+                                                $oneFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . $fileInfo->path;
+                                            
+                                                DEBUG_LOG( sprintf( ".........found possible plugin file at [%s]", $possiblePluginFile ) ); 
+
+                                                $fileList[] = $oneFile;
+                                            }
+                                        }
+
+                                        if ( count( $fileList) != 1 ) {
+                                            DEBUG_LOG( ".........too many files in main directory, skipping for now." ); 
+                                            continue;
+                                        }
+
+                                        $possiblePluginFile = $fileList[0];
+                                    }
+                                } else {
+                                    $possiblePluginFile = $possibleThemeFile; 
+                                }
+                            } else {
+                                $possiblePluginFile = $possibleThemeFile; 
+                            }
+                        }
+
+                        if (!$possiblePluginFile ) {
                             continue;
                         }
+
+                        if ( !is_array( $possiblePluginFile ) ) {
+                            DEBUG_LOG( sprintf( '...Found possible file [%s]', $possiblePluginFile  ) );
+                        }
+
+                        $oneRepo->possiblePluginFile = $possiblePluginFile;
 
                         $newRepos[] = $oneRepo;
                     }
 
-                    $response->msg = '...' . sprintf( __( 'Detected %d valid and non-private respositories for inclusion' ), count( $newRepos ) );
+                    $response->msg = '...' . sprintf( __( 'Detected %d valid and non-private respositories for inclusion, skipped %d private' ), count( $newRepos ), $privateRepos );
                     $response->pass = 1;
                     $response->next_stage = 2;
 
@@ -342,13 +413,26 @@ class JuniperAuthor extends JuniperBerry {
                 if ( $repos ) {
                     $assembledData = [];
                     $wordPress = new WordPress( $this->utils );
+                    $failedPlugins = 0;
 
                     foreach( $repos as $oneRepo ) {
                         // we already know it's valid
-                        $pluginFileName = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . basename( $oneRepo->full_name ) . '.php';
+                        $pluginFileName = $oneRepo->possiblePluginFile;
+                        DEBUG_LOG( sprintf( "......trying to load [%s]", $pluginFileName ) );
+                        
                         $pluginFile = $this->utils->curlGitHubRequest( $pluginFileName );
      
                         $pluginInfo = $wordPress->parseReadmeHeader( $pluginFile );  
+                        if ( !$pluginInfo ) {
+                            DEBUG_LOG( sprintf( "......ERROR, plugin header can't be easily parsed [%s]", $pluginFileName ) );
+                            $failedPlugins++;
+                            continue;
+                        } else {
+                            if ( !isset( $pluginInfo->pluginName ) && !isset( $pluginInfo->themeName ) ) {
+                                DEBUG_LOG( "......Found plugin/theme info, but doesn't appear to have a name " );
+                                continue;
+                            }
+                        }
 
                         $pluginInfo->readme = '';
                         $pluginInfo->readmeHtml = '';
@@ -370,7 +454,7 @@ class JuniperAuthor extends JuniperBerry {
                         $assembledData[] = $oneClass;     
                     }
 
-                    $response->msg = '...' . sprintf( __( 'Plugin headers parsed and README.md data loaded', 'juniper' ) );
+                    $response->msg = '...' . sprintf( __( 'Plugin/Theme headers parsed and README.md data loaded, %d plugins/themes excluded', 'juniper' ), $failedPlugins );
                     $response->next_stage = 3;
                     $response->pass = 1;
 
@@ -378,7 +462,7 @@ class JuniperAuthor extends JuniperBerry {
                 }
                 break;
             case 3:
-                DEBUG_LOG( "...Fetching banner images" );
+                DEBUG_LOG( "...Updating banner images" );
                 $repos = $this->settings->getSetting( 'ajax_update_data' );
                 if ( $repos ) {
                     $assembledData = [];
@@ -404,7 +488,7 @@ class JuniperAuthor extends JuniperBerry {
                 }
                 break;
             case 4:
-                DEBUG_LOG( "...Loading repository issues" );
+                DEBUG_LOG( "...Refreshing repository issues" );
                 $repos = $this->settings->getSetting( 'ajax_update_data' );
                 if ( $repos ) {
                     $assembledData = [];
@@ -431,7 +515,7 @@ class JuniperAuthor extends JuniperBerry {
                 }
                 break;
             case 5:
-                DEBUG_LOG( "...Loading repository releases" );
+                DEBUG_LOG( "...Refreshing repository releases" );
                 $repos = $this->settings->getSetting( 'ajax_update_data' );
                 if ( $repos ) {
                     foreach( $repos as $oneRepo ) {
@@ -456,7 +540,7 @@ class JuniperAuthor extends JuniperBerry {
                 }
                 break;
             case 6:
-                DEBUG_LOG( "...Loading user information" );
+                DEBUG_LOG( "...Refreshing user information" );
                 $decodedUserInfo = false;
                 $userUrl = 'https://api.github.com/user';
                 $userInfo = $this->utils->curlGitHubRequest( $userUrl );
@@ -477,6 +561,7 @@ class JuniperAuthor extends JuniperBerry {
                 DEBUG_LOG( "Starting partial repository updates" );
                 // hack to start at a later stage
                 $repos = $this->settings->getSetting( 'repositories' );
+                
                 $this->settings->setSetting( 'ajax_repos', $repos );
                 $response->msg = '...' . sprintf( __( 'merging in previous data', 'juniper' ) );
                 $response->next_stage = 2;
@@ -498,6 +583,32 @@ class JuniperAuthor extends JuniperBerry {
 
         if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
             switch( $action ) {
+                case 'remove_repo':
+                    $repo = $_POST[ 'repo' ];
+                    $hiddenRepos = $this->settings->getSetting( 'hidden_repos' );
+                    if ( is_array( $hiddenRepos ) ) {
+                        if ( !in_array( $repo, $hiddenRepos ) ) {
+                            $hiddenRepos[] = $repo;
+
+                            sort( $hiddenRepos );
+
+                            $this->settings->setSetting( 'hidden_repos', $hiddenRepos );
+                        }
+                    }
+                    break;
+                case 'restore_repo':
+                    $repo = $_POST[ 'repo' ];
+                    $hiddenRepos = $this->settings->getSetting( 'hidden_repos' );
+                    if ( is_array( $hiddenRepos ) ) {
+                        if ( in_array( $repo, $hiddenRepos ) ) {
+                            $hiddenRepos = array_diff( $hiddenRepos, [ $repo ] );
+
+                            sort( $hiddenRepos );
+
+                            $this->settings->setSetting( 'hidden_repos', $hiddenRepos );
+                        }
+                    }
+                    break;               
                 case 'update_repo':
                     DEBUG_LOG( "...Magic AJAX request received" );
                     add_action( 'shutdown', array( $this, 'handleRefreshOnShutdown' ) );
@@ -529,50 +640,61 @@ class JuniperAuthor extends JuniperBerry {
                     $response->verify = $this->verifyPackage( $package );
                     break;
                 case 'ajax_refresh':
-                    $stage = $_POST[ 'stage' ];
-                    $response->done = 0;
-                    $response->stage = $stage;
-                    $response->result = '';
 
-                    switch( $stage ) {
-                        case 0:
-                            $result = $this->doRefreshStage( 0 );
-                            $response->result = $result;
-                            break;
-                        case 1:
-                            $result = $this->doRefreshStage( 1 );
-                            $response->result = $result;
-                            break;
-                        case 2:
-                            $result = $this->doRefreshStage( 2 );
-                            $response->result = $result;
-                            break;
-                        case 3:
-                            $result = $this->doRefreshStage( 3 );
-                            $response->result = $result;
-                            break;
-                        case 4:
-                            $result = $this->doRefreshStage( 4 );
-                            $response->result = $result;
-                            break;
-                         case 5:
-                            $result = $this->doRefreshStage( 5 );
-                            $response->result = $result;
-                            break; 
-                        case 6:
-                            $result = $this->doRefreshStage( 6 );
-                            $response->result = $result;
-                            break;       
-                        case 10:
-                            $result = $this->doRefreshStage( 10 );
-                            $response->result = $result;
-                            break;
-                        default:
-                            $response->pass = 0;
-                            break;
-                    }  
+                    $isRefreshing = $this->settings->getSetting( 'repo_updating' );
+                    if ( !$isRefreshing ) {
+                        $this->settings->setSetting( 'repo_updating', true );
+
+                        $stage = $_POST[ 'stage' ];
+                        $response->done = 0;
+                        $response->stage = $stage;
+                        $response->result = '';
+                        $response->pass = 0;
+
+                        switch( $stage ) {
+                            case 0:
+                                $result = $this->doRefreshStage( 0 );
+                                $response->result = $result;
+                                break;
+                            case 1:
+                                $result = $this->doRefreshStage( 1 );
+                                $response->result = $result;
+                                break;
+                            case 2:
+                                $result = $this->doRefreshStage( 2 );
+                                $response->result = $result;
+                                break;
+                            case 3:
+                                $result = $this->doRefreshStage( 3 );
+                                $response->result = $result;
+                                break;
+                            case 4:
+                                $result = $this->doRefreshStage( 4 );
+                                $response->result = $result;
+                                break;
+                            case 5:
+                                $result = $this->doRefreshStage( 5 );
+                                $response->result = $result;
+                                break; 
+                            case 6:
+                                $result = $this->doRefreshStage( 6 );
+                                $response->result = $result;
+                                break;       
+                            case 10:
+                                $result = $this->doRefreshStage( 10 );
+                                $response->result = $result;
+                                break;
+                            default:
+                                $response->pass = 0;
+                                break;
+                        }  
+
+                        if ( $response->done || $response->pass == 0 ) {
+                            $this->settings->setSetting( 'repo_updating', false );
+                        }
                     
-                    break;
+                        break;
+                    }
             }
         }
 
@@ -584,6 +706,13 @@ class JuniperAuthor extends JuniperBerry {
     public function handleRefreshOnShutdown() {
         DEBUG_LOG( "...handling refresh on PHP shutdown hook" );
 
+        $isRefreshing = $this->settings->getSetting( 'repo_updating' );
+        if ( $isRefreshing ) {
+            return false;
+        } else {
+            $this->settings->setSetting( 'repo_updating', true );
+        }
+
         $result = $this->doRefreshStage( 0 );
         if ( $result->pass ) {
             $result = $this->doRefreshStage( 1 );
@@ -593,14 +722,18 @@ class JuniperAuthor extends JuniperBerry {
                     $result = $this->doRefreshStage( 3 );
                     if ( $result->pass ) {
                         $result = $this->doRefreshStage( 4 );
-
                         if ( $result->pass ) {
                             $result = $this->doRefreshStage( 5 );
+                            if ( $result->pass ) {
+                                $result = $this->doRefreshStage( 6 );
+                            }
                         }
                     }
                 }
             }
         }
+
+        $this->settings->setSetting( 'repo_updating', false );
     }
 
     public function getPublicKey() {
@@ -717,7 +850,16 @@ class JuniperAuthor extends JuniperBerry {
     }
 
     public function getRepositories() {
-        return apply_filters( 'juniper_repos', $this->settings->getSetting( 'repositories' ) );
+        $hiddenRepos = $this->settings->getSetting( 'hidden_repos' );
+        $repos = apply_filters( 'juniper_repos', $this->settings->getSetting( 'repositories' ) );
+        $filteredRepos = [];
+        foreach( $repos as $name => $info ) { 
+            if ( !in_array( $info->repository->fullName, $hiddenRepos ) ) {
+                $filteredRepos[] = $info;
+            }
+        }
+
+        return $filteredRepos;
     }
 
     public function getFilteredRepositories( $repoType = 'plugin' ) {
@@ -725,10 +867,10 @@ class JuniperAuthor extends JuniperBerry {
         if ( $repos ) {
             $foundRepos = [];
 
-            foreach( $repos as $name => $info ) {
+            foreach( $repos as $name => $info ) {         
                 if ( $info->info->type == $repoType ) {
                     $foundRepos[] = $info;
-                }
+                }       
             }
 
             return $foundRepos;
@@ -738,11 +880,21 @@ class JuniperAuthor extends JuniperBerry {
     }
 
     public function outputPlugins() {
-        return $this->getFilteredRepositories( 'plugin' );
+        $result = new \stdClass;
+        $result->client_version = JUNIPER_AUTHOR_VER;
+        $result->user = $this->getUserInfo();
+        $result->plugins = $this->getFilteredRepositories( 'plugin' );
+
+        return $result;
     }
 
     public function outputThemes() {
-        return $this->getFilteredRepositories( 'theme' );
+        $result = new \stdClass;
+        $result->client_version = JUNIPER_AUTHOR_VER;
+        $result->user = $this->getUserInfo();
+        $result->themes = $this->getFilteredRepositories( 'theme' );
+
+        return $result;
     }
 
     public function setupRestApi() {
