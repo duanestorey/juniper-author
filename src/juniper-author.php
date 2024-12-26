@@ -462,9 +462,9 @@ class JuniperAuthor extends GithubUpdater {
                 DEBUG_LOG( "Starting partial repository updates" );
                 // hack to start at a later stage
                 $repos = $this->settings->getSetting( 'repositories' );
-                $this->settings->setSetting( 'ajax_update_data', $repos );
+                $this->settings->setSetting( 'ajax_repos', $repos );
                 $response->msg = '...' . sprintf( __( 'merging in previous data', 'juniper' ) );
-                $response->next_stage = 3;
+                $response->next_stage = 2;
                 $response->pass = 1;
                 break;
             default:

@@ -46,6 +46,15 @@
 .juniper .setting p {
   max-width: 600px;
 }
+.juniper .info {
+  color: red;
+  margin-top: 10px;
+  font-size: 10pt;
+  margin-bottom: 0px;
+}
+.juniper .center {
+  text-align: center;
+}
 
 .issues table {
   border: none;
