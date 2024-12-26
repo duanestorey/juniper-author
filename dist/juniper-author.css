@@ -56,6 +56,14 @@
   text-align: center;
 }
 
+.col1 {
+  width: 10%;
+}
+
+.col2 {
+  width: 25%;
+}
+
 .issues table {
   border: none;
   border-collapse: collapse;

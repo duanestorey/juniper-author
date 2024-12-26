@@ -363,6 +363,8 @@ class Settings {
         $settings->new_repo_name = false;
 
         $settings->repositories = [];
+        $settings->user_info = [];
+
         $settings->github_token = false;
 
         $settings->reset_settings = false;

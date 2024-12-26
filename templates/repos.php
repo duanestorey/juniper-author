@@ -49,7 +49,7 @@
         </tbody>
     </table>
     <?php } else { ?>
-        <p><?php _e( 'If this is your first time viewing this page, please do a Full Refresh to import your Github repositories.', 'juniper' ); ?></p>
+        <p><?php _e( 'If this is your first time viewing this page, please click "Update Repository Info" to import your Github repositories.', 'juniper' ); ?></p>
     <?php } ?>
     <br />
 
@@ -72,6 +72,8 @@
                 <?php }?> 
             </tbody>
         </table>
+        <p><?php _e( 'To prevent duplicates in the repository, in a future release only plugins with a designated Authority header will be includled by that site.', 'junper' ); ?></p>
+
         <a href="admin.php?page=juniper-repos&juniper_action=refresh&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="do-ajax button button-primary" data-stage="0" /><?php _e( 'Update Repository Info', 'juniper' ); ?></a>
         <?php if ( $repos && count( $repos ) ) { ?>
         <a href="admin.php?page=juniper-repos&juniper_action=submit&juniper_nonce=<?php echo wp_create_nonce( 'juniper' ); ?>" class="button button-secondary" /><?php _e( 'Submit To Mirror', 'juniper' ); ?></a>

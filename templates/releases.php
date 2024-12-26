@@ -38,12 +38,12 @@
             <table class="repo-table striped wp-list-table widefat releases" role="presentation">
                 <thead>
                     <tr>
-                        <th><?php _e( 'Tag', 'juniper' ); ?></th>
-                        <th><?php _e( 'Release Info', 'juniper' ); ?></th>
-                        <th><?php _e( 'Package', 'juniper' ); ?></th>
+                        <th class="col1"><?php _e( 'Tag', 'juniper' ); ?></th>
+                        <th class="col2"><?php _e( 'Release Info', 'juniper' ); ?></th>
+                        <th class="col2"><?php _e( 'Package', 'juniper' ); ?></th>
                         <th><?php _e( 'Release Date', 'juniper' ); ?></th>
-                        <th><?php _e( 'Signed', 'juniper' ); ?></th>
-                        <th><?php _e( 'Actions', 'juniper' ); ?></th>
+                        <th class="col1"><?php _e( 'Signed', 'juniper' ); ?></th>
+                        <th class="col1"><?php _e( 'Actions', 'juniper' ); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,7 +51,7 @@
                 <?php foreach( $repoInfo->releases as $actualRelease ) { ?>
                     <tr class="one-release<?php if ( $actualRelease->signed ) echo ' signed'; else echo ' unsigned'; ?>" data-repo="<?php esc_attr_e( $repoInfo->repository->fullName  ); ?>" data-tag="<?php esc_attr_e( $actualRelease->tag ); ?>">
                         <td><?php echo esc_html( $actualRelease->tag ); ?></td>
-                        <td><?php echo esc_html( $actualRelease->name ); ?></td>
+                        <td><a href="<?php esc_attr_e( $actualRelease->url ); ?>" target="_blank"><?php echo esc_html( $actualRelease->name ); ?></a></td>
                         
                         <?php if ( $actualRelease->signed ) { ?>
                         <td class="package"><?php echo esc_html( basename( $actualRelease->signedName ) ); ?></td>

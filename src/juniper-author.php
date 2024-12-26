@@ -22,7 +22,7 @@ require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/debug.php' );
 
 class JuniperAuthor extends GithubUpdater {
     private static $instance = null;
-    public const UPDATE_REPO_TIME = 2*60;
+    public const UPDATE_REPO_TIME = 15*60;
 
     protected $settings = null;
     protected $utils = null;
@@ -451,12 +451,27 @@ class JuniperAuthor extends GithubUpdater {
                     $this->settings->setSetting( 'repositories', $repos );
 
                     $response->msg = '...' . sprintf( __( 'All Github releases loaded', 'juniper' ) );
+                    $response->next_stage = 6;
+                    $response->pass = 1;
+                }
+                break;
+            case 6:
+                DEBUG_LOG( "...Loading user information" );
+                $decodedUserInfo = false;
+                $userUrl = 'https://api.github.com/user';
+                $userInfo = $this->utils->curlGitHubRequest( $userUrl );
+                if ( $userInfo ) {
+                    $decodedUserInfo = json_decode( $userInfo );
+
+                    $response->msg = '...' . sprintf( __( 'Github user information loaded', 'juniper' ) );
                     $response->next_stage = 0;
                     $response->pass = 1;
                     $response->done = 1;
-
-                    DEBUG_LOG( "Repository update complete" );
                 }
+
+                $this->settings->setSetting( 'user_info', $decodedUserInfo );
+
+                DEBUG_LOG( "Repository update complete" );
                 break;
             case 10:
                 DEBUG_LOG( "Starting partial repository updates" );
@@ -543,7 +558,11 @@ class JuniperAuthor extends GithubUpdater {
                          case 5:
                             $result = $this->doRefreshStage( 5 );
                             $response->result = $result;
-                            break;    
+                            break; 
+                        case 6:
+                            $result = $this->doRefreshStage( 6 );
+                            $response->result = $result;
+                            break;       
                         case 10:
                             $result = $this->doRefreshStage( 10 );
                             $response->result = $result;
@@ -611,9 +630,29 @@ class JuniperAuthor extends GithubUpdater {
         return $data;
     }
 
+    public function getUserInfo() {
+        $filteredUserInfo = new \stdClass;
+
+        $userInfo = $this->settings->getSetting( 'user_info' );
+        if ( $userInfo ) {
+            $filteredUserInfo->login = $userInfo->login;
+            $filteredUserInfo->avatarUrl = $userInfo->avatar_url;
+            $filteredUserInfo->url = $userInfo->url;
+            $filteredUserInfo->name = $userInfo->name;
+            $filteredUserInfo->bio = $userInfo->bio;
+            $filteredUserInfo->company = $userInfo->company;
+            $filteredUserInfo->location = $userInfo->location;
+            $filteredUserInfo->blog_url = $userInfo->blog;
+            $filteredUserInfo->twitter_name = $userInfo->twitter_username;
+        }
+
+        return $filteredUserInfo;
+    }
+
     public function outputReleases( $params ) {
         $result = new \stdClass;
         $result->client_version = JUNIPER_AUTHOR_VER;
+        $result->user = $this->getUserInfo();
         $result->releases = $this->getRepositories();
 
         return $result;
