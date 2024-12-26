@@ -6,8 +6,8 @@
  */
 
 namespace DuaneStorey\JuniperAuthor;
-
 use phpseclib3\Crypt\PublicKeyLoader;
+use DuaneStorey\Juniper\JuniperBerry;
 
 // Prevent direct access
 if ( ! defined( 'WPINC' ) ) {
@@ -19,8 +19,11 @@ require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/github-updater.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/settings.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/wordpress.php' );
 require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/debug.php' );
+require_once( JUNIPER_AUTHOR_MAIN_DIR . '/src/juniper-berry.php' );
 
-class JuniperAuthor extends GithubUpdater {
+
+
+class JuniperAuthor extends JuniperBerry {
     private static $instance = null;
     public const UPDATE_REPO_TIME = 15*60;
 
@@ -46,10 +49,7 @@ class JuniperAuthor extends GithubUpdater {
         // initialize the updater
         parent::__construct( 
             'juniper-author/juniper-author.php',
-            'duanestorey',
-            'juniper-author',
-            JUNIPER_AUTHOR_VER,
-            'main'
+            JUNIPER_AUTHOR_VER
         );
     }
 
