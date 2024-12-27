@@ -90,9 +90,9 @@
                     <li><?php esc_html_e( $repo ); ?> - <a href="#" class="restore-repo" data-repo="<?php esc_attr_e( $repo ); ?>"><?php _e( 'Restore', 'juniper' ); ?></a></li>
                 <?php } ?>
                 </ul>
-            <?php } ?> 
             <br>
             </div>
+            <?php } ?> 
 
         <p><?php _e( 'To prevent duplicates in the repository, in a future release only plugins with a designated Authority header will be includled by that site.', 'junper' ); ?></p>
 
