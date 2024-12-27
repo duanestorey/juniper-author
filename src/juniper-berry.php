@@ -221,31 +221,7 @@ class JuniperBerry {
 
     private function deleteTransients() {
         if ( $this->hasValidInfo() ) {
-            delete_transient( $this->cacheKey );
+            delete_transient( $this->cacheKey . '_info' );
         }
-    }
-
-    private function _getReleaseInfo() {
-        return $this->getReleaseInfo( $this->githubTagApi );
-    }
-
-    public function getReleaseInfo( $releaseUrl ) {
-        $cache_key = 'wp_juniper_releases_' . md5( $releaseUrl );
-        //delete_transient( $cache_key );
-        // Use the Github API to obtain release information
-        $githubTagData = get_transient( $cache_key );
-        if ( $githubTagData === false ) {
-         
-            $result = wp_remote_get( $releaseUrl );
-            if ( !is_wp_error( $result ) ) {
-                $githubTagData = json_decode( wp_remote_retrieve_body( $result ) );
-               
-                if ( $githubTagData !== false ) {
-                    set_transient( $cache_key, $githubTagData, GitHubUpdater::CACHE_TIME );
-                }
-            }
-        } 
-
-        return $githubTagData;
     }
 }
