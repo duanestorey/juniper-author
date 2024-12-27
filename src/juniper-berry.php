@@ -38,7 +38,7 @@ class JuniperBerry {
             add_action( 'admin_init', array( $this, 'checkForUpdate' ) );
             add_filter( 'plugins_api', [ $this, 'handlePluginInfo' ], 20, 3 );
             add_filter( 'site_transient_update_plugins', array( $this, 'handleUpdate' ) );
-            add_filter( 'plugin_action_links_' . $this->pluginSlug, [ $this, 'addActionLinks' ] );
+          //  add_filter( 'plugin_action_links_' . $this->pluginSlug, [ $this, 'addActionLinks' ] );
         }
     }
 
@@ -86,11 +86,11 @@ class JuniperBerry {
         $response->author_profile = $this->updateInfo->pluginInfo->authorUrl;
         $response->homepage       = 'https://github.com/' . $this->updateInfo->repository->fullName;
 
-        if ( !empty( $this->updateInfo->latestRelease->downloadUrlSigned ) ) {
-            $response->download_link  = $this->updateInfo->latestRelease->downloadUrlSigned;
-        } else {
-            $response->download_link  = $this->updateInfo->latestRelease->downloadUrl;
-        }
+       // if ( !empty( $this->updateInfo->latestRelease->downloadUrlSigned ) ) {
+        //    $response->download_link  = $this->updateInfo->latestRelease->downloadUrlSigned;
+       // } else {
+        $response->download_link  = $this->updateInfo->latestRelease->downloadUrl;
+      //  }
         
         $response->requires_php   = $this->updateInfo->pluginInfo->requiresPHP;
         $response->last_updated   = date( 'M-d-y g:i', $this->updateInfo->latestRelease->publishedAt );
