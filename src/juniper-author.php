@@ -330,6 +330,7 @@ class JuniperAuthor extends JuniperBerry {
                 if ( $repos ) {
                     $newRepos = [];
                     $privateRepos = 0;
+                    $forkedRepos = 0;
 
                     foreach( $repos as $oneRepo ) {
                         // Skip private repos for now since we are using authenticated requests
@@ -339,6 +340,11 @@ class JuniperAuthor extends JuniperBerry {
                             continue;
                         }
 
+                        if ( $oneRepo->fork ) {
+                            $forkedRepos++;
+                            DEBUG_LOG( sprintf( "......skipping forked repo [%s]", $oneRepo->full_name ) );
+                            continue;
+                        }
 
                         DEBUG_LOG( "...Checking for main plugin file" );
                         $possiblePluginFile = 'https://raw.githubusercontent.com/' . $oneRepo->full_name . '/refs/heads/' . $oneRepo->default_branch . '/' . basename( $oneRepo->full_name ) . '.php';
@@ -402,7 +408,7 @@ class JuniperAuthor extends JuniperBerry {
                         $newRepos[] = $oneRepo;
                     }
 
-                    $response->msg = '...' . sprintf( __( 'Detected %d valid and non-private respositories for inclusion, skipped %d private' ), count( $newRepos ), $privateRepos );
+                    $response->msg = '...' . sprintf( __( 'Detected %d valid and non-private respositories for inclusion, skipped %d private and %d forked' ), count( $newRepos ), $privateRepos, $forkedRepos );
                     $response->pass = 1;
                     $response->next_stage = 2;
 
