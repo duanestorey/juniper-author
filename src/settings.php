@@ -226,7 +226,13 @@ class Settings {
             if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
                 if ( $_POST[ 'juniper_private_pw_1' ] == $_POST[ 'juniper_private_pw_2' ] ) {
                     $salt = random_bytes( SODIUM_CRYPTO_PWHASH_SALTBYTES  );
-                    $hash = sodium_crypto_pwhash( 32, $_POST[ 'juniper_private_pw_1' ], $salt, SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE );
+                    $hash = sodium_crypto_pwhash(
+                         32, 
+                         $_POST[ 'juniper_private_pw_1' ], 
+                         $salt, 
+                         SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, 
+                         SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE 
+                    );
 
                     $key_pair = sodium_crypto_sign_keypair();
                     if ( $key_pair ) {
