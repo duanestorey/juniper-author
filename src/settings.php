@@ -48,10 +48,8 @@ class Settings {
                 'Signing', 
                 __( 'Code Signing', 'juniper' ),
                 array(
-                        $this->addSetting( 'textarea', 'private_key', __( 'Private Key', 'juniper' ) ),
                         $this->addSetting( 'textarea', 'public_key', __( 'Public Key', 'juniper' ) ),
-                        $this->addSetting( 'text', 'hash_salt', __( 'Hash Salt', 'juniper' ) ),
-                        $this->addSetting( 'text', 'key_nonce', __( 'Key Nonce', 'juniper' ) ),
+                        $this->addSetting( 'text', 'hash_salt', __( 'Password Salt', 'juniper' ) ),
                         $this->addSetting( 'checkbox', 'reset_key', __( 'Delete keys (this is destructive, for testing only)', 'juniper' ) ),
                 )
             );
@@ -227,49 +225,31 @@ class Settings {
                 if ( $_POST[ 'juniper_private_pw_1' ] == $_POST[ 'juniper_private_pw_2' ] ) {
                     $salt = random_bytes( SODIUM_CRYPTO_PWHASH_SALTBYTES  );
                     $hash = sodium_crypto_pwhash(
-                         32, 
-                         $_POST[ 'juniper_private_pw_1' ], 
-                         $salt, 
-                         SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, 
-                         SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE 
+                        32, 
+                        $_POST[ 'juniper_private_pw_1' ], 
+                        $salt, 
+                        SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, 
+                        SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE,
+                        SODIUM_CRYPTO_PWHASH_ALG_ARGON2ID13 
                     );
 
-                    $key_pair = sodium_crypto_sign_keypair();
+                    $key_pair = sodium_crypto_sign_seed_keypair( $hash );
+
                     if ( $key_pair ) {
                         $private_key = sodium_crypto_sign_secretkey( $key_pair );
-
-                        $nonce = random_bytes( 24 );
-                        $encrypted = sodium_crypto_secretbox( $private_key, $nonce, $hash );
-
                         $this->settings->hash_salt = sodium_bin2base64( $salt, SODIUM_BASE64_VARIANT_ORIGINAL  );
-                        $this->settings->key_nonce = sodium_bin2base64( $nonce, SODIUM_BASE64_VARIANT_ORIGINAL  );
+                        $this->settings->key_type = 'sodium';
 
                         // This is encrypted with a hash based on the entered password
-                        $this->settings->private_key = sodium_bin2base64( $encrypted, SODIUM_BASE64_VARIANT_ORIGINAL );
-                        $this->settings->key_type = 'sodium';
+                      //  $this->settings->private_key = sodium_bin2base64( $encrypted, SODIUM_BASE64_VARIANT_ORIGINAL );
+
                         $this->settings->public_key = sodium_bin2base64( sodium_crypto_sign_publickey( $key_pair ), SODIUM_BASE64_VARIANT_ORIGINAL );
-
-                        $decrypted = sodium_crypto_secretbox_open( 
-                            sodium_base642bin( $this->settings->private_key, SODIUM_BASE64_VARIANT_ORIGINAL ), 
-                            sodium_base642bin( $this->settings->key_nonce, SODIUM_BASE64_VARIANT_ORIGINAL ), 
-                            $hash
-                        );
-
-                        // Our test decryption failed
-                        if ( $decrypted != $private_key ) {
-                            $this->settings->hash_salt = false;
-                            $this->settings->key_nonce = false;
-                            $this->settings->private_key = false;
-                            $this->settings->key_type = false;
-                            $this->settings->public_key = false;  
-                        }
 
                         sodium_memzero( $hash );
                         sodium_memzero( $nonce );
                         sodium_memzero( $private_key );
                     }
 
-        
                     $this->saveSettings();
                 }
             }
@@ -395,11 +375,8 @@ class Settings {
         $settings = new \stdClass;
 
         // Adding default settings
-        $settings->private_key = '';
         $settings->public_key = '';
         $settings->hash_salt = '';
-        $settings->key_nonce = '';
-
         $settings->key_type = false;
 
         $settings->reset_key = false;

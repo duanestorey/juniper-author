@@ -7,7 +7,7 @@
 
     <?php $repoInfo = $this->getSetting( 'repositories' ); ?>
 
-    <?php if ( $this->getSetting( 'private_key' ) ) { ?>
+    <?php if ( $this->getSetting( 'hash_salt' ) ) { ?>
     <div class="sign-area">
         <h2><?php _e( 'Sign Packages', 'juniper' ); ?></h2>
 

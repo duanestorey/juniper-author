@@ -197,7 +197,7 @@ class JuniperBerry {
                                 $decodedContent = json_decode( $body );
                                 $foundContent = false;
                                 foreach( $decodedContent->releases as $num => $repo ) {
-                                    if ( $repo->info->pluginName == $updateData->pluginName ) {
+                                    if ( !empty( $repo->info->pluginName ) && $repo->info->pluginName == $updateData->pluginName ) {
                                     
                                         unset( $repo->info->readme );
                                         unset( $repo->info->readmeHtml );

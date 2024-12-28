@@ -7,7 +7,7 @@
 
     <?php $this->doOptionsHeader(); ?>
 
-    <?php if ( $this->getSetting( 'private_key' ) ) { ?>
+    <?php if ( $this->getSetting( 'hash_salt' ) ) { ?>
         <form method="post"  enctype="multipart/form-data" action="admin.php?page=juniper-options"> 
             <input type="hidden" name="juniper_author_settings" value="1">
             <input type="hidden" name="juniper_author_nonce" value="<?php echo wp_create_nonce( 'juniper' ); ?>">

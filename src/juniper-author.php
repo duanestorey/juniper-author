@@ -164,21 +164,17 @@ class JuniperAuthor extends JuniperBerry {
         $repositories = $this->settings->getRepositories();
 
         $settings = $this->settings->getAllSettings();
-        if ( empty( $settings->private_key ) || empty( $settings->hash_salt ) || empty( $settings->key_nonce ) ) {
+        if ( empty( $settings->hash_salt ) ) {
             return;
         }
 
       //  DEBUG_LOG( 'Settings are : '  . print_r( $settings, true ) );
 
         $salt = sodium_base642bin( $settings->hash_salt, SODIUM_BASE64_VARIANT_ORIGINAL );
-       // DEBUG_LOG( 'Salt is : '  . strlen( $salt ) );
         $hash = sodium_crypto_pwhash( 32, $passPhrase, $salt, SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE );
 
-        $private_key = sodium_crypto_secretbox_open( 
-            sodium_base642bin( $settings->private_key, SODIUM_BASE64_VARIANT_ORIGINAL ), 
-            sodium_base642bin( $settings->key_nonce, SODIUM_BASE64_VARIANT_ORIGINAL ), 
-            $hash
-        );
+        $key_pair = sodium_crypto_sign_seed_keypair( $hash );
+        $private_key = sodium_crypto_sign_secretkey( $key_pair );
 
         if ( !$private_key ) {
             DEBUG_LOG( "Decryption failed" );
@@ -224,12 +220,21 @@ class JuniperAuthor extends JuniperBerry {
                                 $sig[ 'filename' ] = basename( $destinationSignedZipFile );
                                 $sig[ 'hash' ] = sodium_bin2base64( $hashBin, SODIUM_BASE64_VARIANT_ORIGINAL );
                                 $sig[ 'hash_type' ] = 'sha384';
-                                $sig[ 'signature' ] = sodium_bin2base64( sodium_crypto_sign_detached( $hashBin, $private_key ), SODIUM_BASE64_VARIANT_ORIGINAL );
+                                $sig[ 'signature' ] = sodium_bin2base64( 
+                                    sodium_crypto_sign_detached( $hashBin, $private_key ), 
+                                    SODIUM_BASE64_VARIANT_ORIGINAL 
+                                );
 
                                 ksort( $sig );
 
                                 // Sign the entire package with the private key so we can make sure the variables haven't been tampered with
-                                $sig[ 'auth' ] = sodium_bin2base64( sodium_crypto_sign_detached( hash( 'sha384', json_encode( $sig ), true ), $private_key ), SODIUM_BASE64_VARIANT_ORIGINAL );
+                                $sig[ 'auth' ] = sodium_bin2base64( 
+                                    sodium_crypto_sign_detached( 
+                                        hash( 'sha384', json_encode( $sig ), true ), 
+                                        $private_key 
+                                    ), 
+                                    SODIUM_BASE64_VARIANT_ORIGINAL 
+                                );
                             
                                 file_put_contents( $sigFile, json_encode( $sig ) );         
 
