@@ -257,6 +257,7 @@ class JuniperAuthor extends JuniperBerry {
                                 DEBUG_LOG( 'Signed file is => ' . basename( $destinationSignedZipFile ) );     
                             }
 
+                            sodium_memzero( $key_pair );
                             sodium_memzero( $private_key );
                             return basename( $destinationSignedZipFile );
                         };
@@ -270,6 +271,10 @@ class JuniperAuthor extends JuniperBerry {
 
         if ( $private_key ) {
             sodium_memzero( $private_key );
+        }
+
+        if ( $key_pair ) {
+            sodium_memzero( $key_pair );
         }
     }
 

@@ -236,18 +236,11 @@ class Settings {
                     $key_pair = sodium_crypto_sign_seed_keypair( $hash );
 
                     if ( $key_pair ) {
-                        $private_key = sodium_crypto_sign_secretkey( $key_pair );
                         $this->settings->hash_salt = sodium_bin2base64( $salt, SODIUM_BASE64_VARIANT_ORIGINAL  );
                         $this->settings->key_type = 'sodium';
-
-                        // This is encrypted with a hash based on the entered password
-                      //  $this->settings->private_key = sodium_bin2base64( $encrypted, SODIUM_BASE64_VARIANT_ORIGINAL );
-
                         $this->settings->public_key = sodium_bin2base64( sodium_crypto_sign_publickey( $key_pair ), SODIUM_BASE64_VARIANT_ORIGINAL );
-
-                        sodium_memzero( $hash );
-                        sodium_memzero( $nonce );
-                        sodium_memzero( $private_key );
+                        
+                        sodium_memzero( $key_pair );
                     }
 
                     $this->saveSettings();
