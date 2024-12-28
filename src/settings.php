@@ -48,9 +48,19 @@ class Settings {
                 'Signing', 
                 __( 'Code Signing', 'juniper' ),
                 array(
+                        $this->addSetting( 'key_date', 'key_date', __( 'Key Creation Date', 'juniper' ) ),
                         $this->addSetting( 'textarea', 'public_key', __( 'Public Key', 'juniper' ) ),
-                        $this->addSetting( 'text', 'hash_salt', __( 'Password Salt', 'juniper' ) ),
+                        $this->addSetting( 'text', 'password_salt', __( 'Password Salt', 'juniper' ) ),
                         $this->addSetting( 'checkbox', 'reset_key', __( 'Delete keys (this is destructive, for testing only)', 'juniper' ) ),
+                )
+            );
+
+            $this->addSettingsSection( 
+                $this->settingsPages[ 'options' ],
+                'Headers', 
+                __( 'Plugin/Theme Headers', 'juniper' ),
+                array(
+                        $this->addSetting( 'headers', 'headers', __( 'These headers should be added to your primary plugin and theme files', 'juniper' ) )
                 )
             );
 
@@ -205,11 +215,10 @@ class Settings {
                 // Settings are saved, show notification on next page
                 update_option( Settings::UPDATED_KEY, 1, false );
                 if ( isset( $this->settings->reset_key ) && $this->settings->reset_key ) {
-                    $this->settings->private_key = null;
-                    $this->settings->public_key = null;
+                    $this->settings->public_key = false;
+                    $this->settings->hashed_password = false;
                     $this->settings->reset_key = false;
-                    $this->settings->hash_salt = false;
-                    $this->settings->key_nonce = false;
+                    $this->settings->password_salt = false;
                     $this->saveSettings();
                 } else if ( $this->settings->reset_settings ) {
                     $this->deleteAllOptions();
@@ -229,14 +238,20 @@ class Settings {
                         $_POST[ 'juniper_private_pw_1' ], 
                         $salt, 
                         SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, 
-                        SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE,
-                        SODIUM_CRYPTO_PWHASH_ALG_ARGON2ID13 
+                        SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE 
                     );
 
                     $key_pair = sodium_crypto_sign_seed_keypair( $hash );
 
                     if ( $key_pair ) {
-                        $this->settings->hash_salt = sodium_bin2base64( $salt, SODIUM_BASE64_VARIANT_ORIGINAL  );
+                        $this->settings->hashed_password = sodium_crypto_pwhash_str( 
+                            $_POST[ 'juniper_private_pw_1' ], 
+                            SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, 
+                            SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE 
+                        );
+
+                        $this->settings->key_date = time();
+                        $this->settings->password_salt = sodium_bin2base64( $salt, SODIUM_BASE64_VARIANT_ORIGINAL );
                         $this->settings->key_type = 'sodium';
                         $this->settings->public_key = sodium_bin2base64( sodium_crypto_sign_publickey( $key_pair ), SODIUM_BASE64_VARIANT_ORIGINAL );
                         
@@ -308,6 +323,20 @@ class Settings {
     public function renderOneSetting( $setting ) {
         echo '<div class="setting ' . $setting->type . '">';
         switch( $setting->type ) {
+            case 'headers':
+                $publicKey = $this->getSetting( 'public_key' );
+                echo '<textarea rows="3" readonly>';
+                echo 'Authority: ' . home_url() . "\n";
+                echo 'Public Key: ' . $publicKey. "\n";
+                echo '</textarea><br>';
+                echo '<label for="' . esc_attr( $setting->name ) . '">' . esc_html( $setting->desc ) . '</label><br>';
+                break;
+            case 'key_date':
+                echo '<label for="' . esc_attr( $setting->name ) . '"><strong>' . esc_html( $setting->desc ) . '</strong></label><br>';
+                $currentSetting = $this->getSetting( $setting->name );
+                $daysAgo = ((time() - $currentSetting)/(24*3600));
+                echo date( 'F jS, Y g:ia', $currentSetting ) . ' - (' . sprintf( _n( '%d day ago', '%d days ago', $daysAgo, 'juniper' ), $daysAgo ) . ')';
+                break;
             case 'image':
                 $currentSetting = $this->getSetting( $setting->name );
                
@@ -369,8 +398,10 @@ class Settings {
 
         // Adding default settings
         $settings->public_key = '';
-        $settings->hash_salt = '';
+        $settings->password_salt = '';
         $settings->key_type = false;
+        $settings->key_date = false;
+        $settings->hashed_password = false;
 
         $settings->reset_key = false;
         $settings->new_repo_name = false;

@@ -86,6 +86,7 @@ function juniperBegin() {
             pw: jQuery( '#juniper_private_pw_1' ).val()
         }
 
+        var button = jQuery( this );
         juniperAjax( 'test_key', params, function( response ) { 
             var decodedResponse = jQuery.parseJSON( response );
             if( !decodedResponse.key_valid ) {
@@ -95,7 +96,14 @@ function juniperBegin() {
                 showProgressBar();
                 hideSigningForm();
 
-                var allReleases = jQuery( 'tr.unsigned' );
+                var allReleases;
+                
+                if ( button.attr( 'data-type' ) == 'new' ) {
+                    allReleases = jQuery( 'tr.one-release.unsigned' );
+                } else if ( button.attr( 'data-type' == 'all' ) ) {
+                    allReleases = jQuery( 'tr.one-release' );
+                }
+
                 var releaseCount = allReleases.size();
                 var currentItem = 0;
                 if ( releaseCount ) {

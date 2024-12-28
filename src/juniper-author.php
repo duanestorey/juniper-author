@@ -148,12 +148,11 @@ class JuniperAuthor extends JuniperBerry {
         }
     }
 
+    // Since libsodium doesn't verify stored a hash of the password so we don't accidentally create garbage signatures 
     protected function testPrivateKey( $passPhrase ) {
-
-           // $private_key = PublicKeyLoader::loadPrivateKey( $this->settings->getSetting( 'private_key' ), $passPhrase );
-
-            return true;
-   
+        $hashed_password = $this->settings->getSetting( 'hashed_password' );
+        
+        return sodium_crypto_pwhash_str_verify( $hashed_password, $passPhrase );
     }
 
     protected function signRepoPackage( $repo, $tagName, $passPhrase ) {
@@ -164,13 +163,11 @@ class JuniperAuthor extends JuniperBerry {
         $repositories = $this->settings->getRepositories();
 
         $settings = $this->settings->getAllSettings();
-        if ( empty( $settings->hash_salt ) ) {
+        if ( empty( $settings->password_salt ) ) {
             return;
         }
 
-      //  DEBUG_LOG( 'Settings are : '  . print_r( $settings, true ) );
-
-        $salt = sodium_base642bin( $settings->hash_salt, SODIUM_BASE64_VARIANT_ORIGINAL );
+        $salt = sodium_base642bin( $settings->password_salt, SODIUM_BASE64_VARIANT_ORIGINAL );
         $hash = sodium_crypto_pwhash( 
             SODIUM_CRYPTO_SIGN_SEEDBYTES, 
             $passPhrase, 
@@ -203,17 +200,13 @@ class JuniperAuthor extends JuniperBerry {
                         if ( !empty( $releaseInfo->downloadUrl ) ) {
                             $zipName = basename( $releaseInfo->downloadUrl );
                             $destinationZipFile = $releasePath . '/' . $zipName;
-                            $destinationSignedZipFile = str_replace( '.zip', '.signed.zip', $destinationZipFile );
 
-                            if ( !file_exists( $destinationSignedZipFile ) ) {
-                                if ( !file_exists( $destinationZipFile) ) {
-                                    copy( $releaseInfo->downloadUrl, $destinationZipFile ); 
-                                }
-                                      
-                                $zip = new \ZipArchive();
+                            if ( !file_exists( $destinationZipFile) ) {
+                                copy( $releaseInfo->downloadUrl, $destinationZipFile ); 
+                            }
 
-                                $sigFile = $releasePath . '/juniper.sig';
-                            
+                            if ( file_exists( $destinationSignedZipFile ) ) {
+                                $sigFile = $releasePath . '/signature.json';    
                                 $sig = array();
 
                                 if ( $current_user->display_name ) {
@@ -223,7 +216,7 @@ class JuniperAuthor extends JuniperBerry {
                                 $hashBin = hash_file( 'sha384', $destinationZipFile, true );
                                 
                                 $sig[ 'ver' ] = '1.0';
-                                $sig[ 'filename' ] = basename( $destinationSignedZipFile );
+                                $sig[ 'filename' ] = basename( $destinationZipFile );
                                 $sig[ 'hash' ] = sodium_bin2base64( $hashBin, SODIUM_BASE64_VARIANT_ORIGINAL );
                                 $sig[ 'hash_type' ] = 'sha384';
                                 $sig[ 'signature' ] = sodium_bin2base64( 
@@ -241,25 +234,13 @@ class JuniperAuthor extends JuniperBerry {
                                     ), 
                                     SODIUM_BASE64_VARIANT_ORIGINAL 
                                 );
-                            
-                                file_put_contents( $sigFile, json_encode( $sig ) );         
-
-                                if ( $zip->open( $destinationSignedZipFile, \ZipArchive::OVERWRITE | \ZipArchive::CREATE ) === TRUE ) {
-                                    $zip->addFile( $sigFile, 'signature.json' );
-                                    $zip->addFile( $destinationZipFile, $zipName );
-                                    $zip->setArchiveComment( json_encode( $sig ) );
-
-                                    $zip->close();
-                                }
-
-                                rename( $destinationZipFile, str_replace( '.zip', '.bak.zip', $destinationZipFile ) );
                                 
                                 DEBUG_LOG( 'Signed file is => ' . basename( $destinationSignedZipFile ) );     
                             }
 
                             sodium_memzero( $key_pair );
                             sodium_memzero( $private_key );
-                            return basename( $destinationSignedZipFile );
+                            return basename( $destinationZipFile );
                         };
 
                         break;

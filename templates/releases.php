@@ -7,7 +7,7 @@
 
     <?php $repoInfo = $this->getSetting( 'repositories' ); ?>
 
-    <?php if ( $this->getSetting( 'hash_salt' ) ) { ?>
+    <?php if ( $this->getSetting( 'password_salt' ) ) { ?>
     <div class="sign-area">
         <h2><?php _e( 'Sign Packages', 'juniper' ); ?></h2>
 
@@ -19,7 +19,8 @@
             <div class="one-setting">
                 <?php _e( 'Enter password to use private key', 'juniper' ); ?></label>
                 <input type="password" name="juniper_private_pw_1" id="juniper_private_pw_1" />  <label for="juniper_private_pw_1">
-                <a href="#" class="button button-primary digitally-sign">Sign</a>
+                <a href="#" class="button button-primary digitally-sign" data-type="new"><?php _e( 'Sign New', 'juniper' ); ?></a>
+                <a href="#" class="button button-primary digitally-sign" data-type="all"><?php _e( 'Sign All', 'juniper' ); ?></a>
             </div>
         </form>   
 
