@@ -171,7 +171,13 @@ class JuniperAuthor extends JuniperBerry {
       //  DEBUG_LOG( 'Settings are : '  . print_r( $settings, true ) );
 
         $salt = sodium_base642bin( $settings->hash_salt, SODIUM_BASE64_VARIANT_ORIGINAL );
-        $hash = sodium_crypto_pwhash( 32, $passPhrase, $salt, SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE );
+        $hash = sodium_crypto_pwhash( 
+            SODIUM_CRYPTO_SIGN_SEEDBYTES, 
+            $passPhrase, 
+            $salt, 
+            SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, 
+            SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE 
+        );
 
         $key_pair = sodium_crypto_sign_seed_keypair( $hash );
         $private_key = sodium_crypto_sign_secretkey( $key_pair );

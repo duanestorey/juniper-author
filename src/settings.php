@@ -225,7 +225,7 @@ class Settings {
                 if ( $_POST[ 'juniper_private_pw_1' ] == $_POST[ 'juniper_private_pw_2' ] ) {
                     $salt = random_bytes( SODIUM_CRYPTO_PWHASH_SALTBYTES  );
                     $hash = sodium_crypto_pwhash(
-                        32, 
+                        SODIUM_CRYPTO_SIGN_SEEDBYTES, 
                         $_POST[ 'juniper_private_pw_1' ], 
                         $salt, 
                         SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, 
