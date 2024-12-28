@@ -7,9 +7,6 @@
 
 namespace DuaneStorey\JuniperAuthor;
 
-use phpseclib3\Crypt\EC;
-use phpseclib3\Crypt\RSA;
-
 // Prevent direct access
 if ( ! defined( 'WPINC' ) ) {
     die;
@@ -53,6 +50,8 @@ class Settings {
                 array(
                         $this->addSetting( 'textarea', 'private_key', __( 'Private Key', 'juniper' ) ),
                         $this->addSetting( 'textarea', 'public_key', __( 'Public Key', 'juniper' ) ),
+                        $this->addSetting( 'text', 'hash_salt', __( 'Hash Salt', 'juniper' ) ),
+                        $this->addSetting( 'text', 'key_nonce', __( 'Key Nonce', 'juniper' ) ),
                         $this->addSetting( 'checkbox', 'reset_key', __( 'Delete keys (this is destructive, for testing only)', 'juniper' ) ),
                 )
             );
@@ -211,6 +210,8 @@ class Settings {
                     $this->settings->private_key = null;
                     $this->settings->public_key = null;
                     $this->settings->reset_key = false;
+                    $this->settings->hash_salt = false;
+                    $this->settings->key_nonce = false;
                     $this->saveSettings();
                 } else if ( $this->settings->reset_settings ) {
                     $this->deleteAllOptions();
@@ -224,20 +225,53 @@ class Settings {
             $nonce = $_POST[ 'juniper_author_nonce' ];
             if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
                 if ( $_POST[ 'juniper_private_pw_1' ] == $_POST[ 'juniper_private_pw_2' ] ) {
-                    require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
+                    $salt = random_bytes( SODIUM_CRYPTO_PWHASH_SALTBYTES  );
+                    $hash = sodium_crypto_pwhash( 32, $_POST[ 'juniper_private_pw_1' ], $salt, SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE );
 
-                    //$private = RSA::createKey()->withPassword( $_POST[ 'juniper_private_pw_1' ] );
-                    $private = EC::createKey('Ed25519')->withPassword( $_POST[ 'juniper_private_pw_1' ] );
-                    $public = $private->getPublicKey();
+                    $key_pair = sodium_crypto_sign_keypair();
+                    if ( $key_pair ) {
+                        $private_key = sodium_crypto_sign_secretkey( $key_pair );
 
-                    $this->settings->private_key = $private->toString( 'PKCS8' );
-                    $this->settings->key_type = 'ed25519';
-                    $this->settings->public_key = $private->getPublicKey()->toString( 'PKCS8' );;
+                        $nonce = random_bytes( 24 );
+                        $encrypted = sodium_crypto_secretbox( $private_key, $nonce, $hash );
 
+                        $this->settings->hash_salt = sodium_bin2base64( $salt, SODIUM_BASE64_VARIANT_ORIGINAL  );
+                        $this->settings->key_nonce = sodium_bin2base64( $nonce, SODIUM_BASE64_VARIANT_ORIGINAL  );
+
+                        // This is encrypted with a hash based on the entered password
+                        $this->settings->private_key = sodium_bin2base64( $encrypted, SODIUM_BASE64_VARIANT_ORIGINAL );
+                        $this->settings->key_type = 'sodium';
+                        $this->settings->public_key = sodium_bin2base64( sodium_crypto_sign_publickey( $key_pair ), SODIUM_BASE64_VARIANT_ORIGINAL );
+
+                        $decrypted = sodium_crypto_secretbox_open( 
+                            sodium_base642bin( $this->settings->private_key, SODIUM_BASE64_VARIANT_ORIGINAL ), 
+                            sodium_base642bin( $this->settings->key_nonce, SODIUM_BASE64_VARIANT_ORIGINAL ), 
+                            $hash
+                        );
+
+                        // Our test decryption failed
+                        if ( $decrypted != $private_key ) {
+                            $this->settings->hash_salt = false;
+                            $this->settings->key_nonce = false;
+                            $this->settings->private_key = false;
+                            $this->settings->key_type = false;
+                            $this->settings->public_key = false;  
+                        }
+
+                        sodium_memzero( $hash );
+                        sodium_memzero( $nonce );
+                        sodium_memzero( $private_key );
+                    }
+
+        
                     $this->saveSettings();
                 }
             }
         }
+    }
+
+    public function getAllSettings() {
+        return $this->settings;
     }
 
     public function saveSettings() {
@@ -319,7 +353,7 @@ class Settings {
             case 'textarea':
                 $currentSetting = $this->getSetting( $setting->name );
                 echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '"><strong>' . esc_html( $setting->desc ) . '</strong></label><br/>';
-                echo '<textarea rows="6" name="wpsetting_' . esc_attr( $setting->name ) . '" readonly>';
+                echo '<textarea rows="3" name="wpsetting_' . esc_attr( $setting->name ) . '" readonly>';
                 echo esc_html( $currentSetting );
                 echo '</textarea>';
                 break;
@@ -357,6 +391,9 @@ class Settings {
         // Adding default settings
         $settings->private_key = '';
         $settings->public_key = '';
+        $settings->hash_salt = '';
+        $settings->key_nonce = '';
+
         $settings->key_type = false;
 
         $settings->reset_key = false;

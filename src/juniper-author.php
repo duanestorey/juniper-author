@@ -6,7 +6,6 @@
  */
 
 namespace DuaneStorey\JuniperAuthor;
-use phpseclib3\Crypt\PublicKeyLoader;
 use DuaneStorey\Juniper\JuniperBerry;
 
 // Prevent direct access
@@ -53,10 +52,8 @@ class JuniperAuthor extends JuniperBerry {
 
     public function init() {
         $this->settings->init();
-
         $this->checkForRepoUpdate();
     }
-
 
     public function checkForRepoUpdate() {
         if ( !wp_doing_ajax() && $this->settings->getSetting( 'github_token' ) ) {
@@ -152,95 +149,116 @@ class JuniperAuthor extends JuniperBerry {
     }
 
     protected function testPrivateKey( $passPhrase ) {
-        try {
-            require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
 
-            $private_key = PublicKeyLoader::loadPrivateKey( $this->settings->getSetting( 'private_key' ), $passPhrase );
+           // $private_key = PublicKeyLoader::loadPrivateKey( $this->settings->getSetting( 'private_key' ), $passPhrase );
 
             return true;
-        } catch ( \phpseclib3\Exception\NoKeyLoadedException $e ) {
-            return false;
-        }
+   
     }
 
     protected function signRepoPackage( $repo, $tagName, $passPhrase ) {
-        try {
-            require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
+        $current_user = wp_get_current_user();
 
-            $private_key = PublicKeyLoader::loadPrivateKey( $this->settings->getSetting( 'private_key' ), $passPhrase );
-            $private_key->withSignatureFormat( 'IEEE' );
+        @mkdir( JUNIPER_AUTHOR_RELEASES_PATH, 0755 );
 
-            $current_user = wp_get_current_user();
+        $repositories = $this->settings->getRepositories();
 
-            @mkdir( JUNIPER_AUTHOR_RELEASES_PATH, 0755 );
+        $settings = $this->settings->getAllSettings();
+        if ( empty( $settings->private_key ) || empty( $settings->hash_salt ) || empty( $settings->key_nonce ) ) {
+            return;
+        }
 
-            $repositories = $this->settings->getRepositories();
-            
-            foreach( $repositories as $oneRepo ) {
-                if ( $oneRepo->repository->fullName == $repo ) {
-                    foreach( $oneRepo->releases as $releaseInfo ) {
-                        if ( $releaseInfo->tag == $tagName ) {
-                            $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . $repo . '/' . $releaseInfo->tag	;
+      //  DEBUG_LOG( 'Settings are : '  . print_r( $settings, true ) );
 
-                            if ( !file_exists( $releasePath ) ) {
-                                @mkdir( $releasePath, 0755, true );
-                       
-                                if ( !empty( $releaseInfo->downloadUrl ) ) {
-                                    $zipName = basename( $releaseInfo->downloadUrl );
-                                    $destinationZipFile = $releasePath . '/' . $zipName;
+        $salt = sodium_base642bin( $settings->hash_salt, SODIUM_BASE64_VARIANT_ORIGINAL );
+       // DEBUG_LOG( 'Salt is : '  . strlen( $salt ) );
+        $hash = sodium_crypto_pwhash( 32, $passPhrase, $salt, SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE );
 
-                                    if ( !file_exists( $destinationZipFile ) ) {
-                                        copy( $releaseInfo->downloadUrl, $destinationZipFile ); 
+        $private_key = sodium_crypto_secretbox_open( 
+            sodium_base642bin( $settings->private_key, SODIUM_BASE64_VARIANT_ORIGINAL ), 
+            sodium_base642bin( $settings->key_nonce, SODIUM_BASE64_VARIANT_ORIGINAL ), 
+            $hash
+        );
 
-                                        $destinationSignedZipFile = str_replace( '.zip', '.signed.zip', $destinationZipFile );
+        if ( !$private_key ) {
+            DEBUG_LOG( "Decryption failed" );
+        }
+        
+        foreach( $repositories as $oneRepo ) {
+            if ( $oneRepo->repository->fullName == $repo ) {
+                foreach( $oneRepo->releases as $releaseInfo ) {
+                    if ( $releaseInfo->tag == $tagName ) {
+                        $releasePath = JUNIPER_AUTHOR_RELEASES_PATH . '/' . $repo . '/' . $releaseInfo->tag	;
 
-                                        $zip = new \ZipArchive();
+                        DEBUG_LOG( "Release path => " . $releasePath );
 
-                                        $sigFile = $releasePath . '/juniper.sig';
-                                    
-                                        $sig = array();
-
-                                        if ( $current_user->display_name ) {
-                                            $sig[ 'author' ] = $current_user->display_name;
-                                        }
-
-                                        $hashBin = hash_file( 'SHA256', $destinationZipFile, true );
-                                        
-                                        $sig[ 'ver' ] = '1.0';
-                                        $sig[ 'hash' ] = base64_encode( $hashBin );
-                                        $sig[ 'hash_type' ] = 'SHA256';
-                                        $sig[ 'signature' ] = base64_encode( $private_key->sign( $hashBin ) );
-
-                                        ksort( $sig );
-
-                                        // Sign the entire package with the private key so we can make sure the variables haven't been tampered with
-                                        $sig[ 'auth' ] = base64_encode( $private_key->sign( hash( 'sha256', json_encode( $sig ), true ) ) );
-                                    
-                                        file_put_contents( $sigFile, json_encode( $sig ) );         
-
-                                        if ( $zip->open( $destinationSignedZipFile, \ZipArchive::OVERWRITE | \ZipArchive::CREATE ) === TRUE ) {
-                                            $zip->addFile( $sigFile, 'signature.json' );
-                                            $zip->addFile( $destinationZipFile, $zipName );
-                                            $zip->setArchiveComment( json_encode( $sig ) );
-
-                                            $zip->close();
-                                        }
-
-                                        rename( $destinationZipFile, str_replace( '.zip', '.bak.zip', $destinationZipFile ) );
-
-                                        return basename( $destinationSignedZipFile );
-                                    }
-                                }
-                            };
-
-                            break;
-                                    
+                        if ( !file_exists( $releasePath ) ) {
+                            @mkdir( $releasePath, 0755, true );
                         }
+
+                        DEBUG_LOG( 'Release download url is => ' . $releaseInfo->downloadUrl );
+                
+                        if ( !empty( $releaseInfo->downloadUrl ) ) {
+                            $zipName = basename( $releaseInfo->downloadUrl );
+                            $destinationZipFile = $releasePath . '/' . $zipName;
+                            $destinationSignedZipFile = str_replace( '.zip', '.signed.zip', $destinationZipFile );
+
+                            if ( !file_exists( $destinationSignedZipFile ) ) {
+                                if ( !file_exists( $destinationZipFile) ) {
+                                    copy( $releaseInfo->downloadUrl, $destinationZipFile ); 
+                                }
+                                      
+                                $zip = new \ZipArchive();
+
+                                $sigFile = $releasePath . '/juniper.sig';
+                            
+                                $sig = array();
+
+                                if ( $current_user->display_name ) {
+                                    $sig[ 'author' ] = $current_user->display_name;
+                                }
+
+                                $hashBin = hash_file( 'sha384', $destinationZipFile, true );
+                                
+                                $sig[ 'ver' ] = '1.0';
+                                $sig[ 'filename' ] = basename( $destinationSignedZipFile );
+                                $sig[ 'hash' ] = sodium_bin2base64( $hashBin, SODIUM_BASE64_VARIANT_ORIGINAL );
+                                $sig[ 'hash_type' ] = 'sha384';
+                                $sig[ 'signature' ] = sodium_bin2base64( sodium_crypto_sign_detached( $hashBin, $private_key ), SODIUM_BASE64_VARIANT_ORIGINAL );
+
+                                ksort( $sig );
+
+                                // Sign the entire package with the private key so we can make sure the variables haven't been tampered with
+                                $sig[ 'auth' ] = sodium_bin2base64( sodium_crypto_sign_detached( hash( 'sha384', json_encode( $sig ), true ), $private_key ), SODIUM_BASE64_VARIANT_ORIGINAL );
+                            
+                                file_put_contents( $sigFile, json_encode( $sig ) );         
+
+                                if ( $zip->open( $destinationSignedZipFile, \ZipArchive::OVERWRITE | \ZipArchive::CREATE ) === TRUE ) {
+                                    $zip->addFile( $sigFile, 'signature.json' );
+                                    $zip->addFile( $destinationZipFile, $zipName );
+                                    $zip->setArchiveComment( json_encode( $sig ) );
+
+                                    $zip->close();
+                                }
+
+                                rename( $destinationZipFile, str_replace( '.zip', '.bak.zip', $destinationZipFile ) );
+                                
+                                DEBUG_LOG( 'Signed file is => ' . basename( $destinationSignedZipFile ) );     
+                            }
+
+                            sodium_memzero( $private_key );
+                            return basename( $destinationSignedZipFile );
+                        };
+
+                        break;
+                                
                     }
                 }
             }
-        } catch ( \phpseclib3\Exception $e ) {
-        
+        }
+
+        if ( $private_key ) {
+            sodium_memzero( $private_key );
         }
     }
 
@@ -250,9 +268,9 @@ class JuniperAuthor extends JuniperBerry {
         $verifyResult->file_valid = '0';
         $verifyResult->package = $package;
 
-        require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
+        $public_key = sodium_base642bin( $this->settings->getSetting( 'public_key' ), SODIUM_BASE64_VARIANT_ORIGINAL );
 
-        $public_key = PublicKeyLoader::loadPublicKey( $this->settings->getSetting( 'public_key' ) );
+        DEBUG_LOG( "Trying to verify using public key => " . $this->settings->getSetting( 'public_key' ) );
         $zip = new \ZipArchive();
         $result = $zip->open( JUNIPER_AUTHOR_RELEASES_PATH . '/' . $package, \ZipArchive::RDONLY );
         if ( $result === TRUE ) {
@@ -260,12 +278,14 @@ class JuniperAuthor extends JuniperBerry {
         
             if ( $comment ) {
                 $comment = json_decode( $comment );
+                DEBUG_LOG( "Zip comment is => " . print_r( $comment, true ) );
 
-                $sigBin = base64_decode( $comment->signature );
-                $hashBin = base64_decode( $comment->hash  );
+                $sigBin = sodium_base642bin( $comment->signature, SODIUM_BASE64_VARIANT_ORIGINAL );
+                $hashBin = sodium_base642bin( $comment->hash, SODIUM_BASE64_VARIANT_ORIGINAL );
             }
 
-            $result = $public_key->verify( $hashBin, $sigBin );
+            $result = sodium_crypto_sign_verify_detached( $sigBin, $hashBin, $public_key );
+            DEBUG_LOG( "Signature result => " . $result );
             if ( $result ) { 
                 $verifyResult->signature_valid = '1';
 
@@ -273,7 +293,7 @@ class JuniperAuthor extends JuniperBerry {
 
                 $zip->extractTo( $tempDir );
                 $originalName = $tempDir . '/' . str_replace( '.signed.zip', '.zip', basename( $package ) );
-                $verifyResult->local_file_hash = base64_encode( hash_file( 'SHA256', $originalName, true ) );
+                $verifyResult->local_file_hash = base64_encode( hash_file( 'sha384', $originalName, true ) );
                 $verifyResult->local_file_path = $originalName;
 
                 $verifyResult->file_valid = ( $verifyResult->local_file_hash == $comment->hash ) ? '1' : '0';
@@ -757,8 +777,8 @@ class JuniperAuthor extends JuniperBerry {
         $public_key = $this->settings->getSetting( 'public_key' );
         if ( $public_key ) {
             $data->version = '1.0';
-            $data->key_type = $this->settings->getSetting( 'key_type' );
             $data->public_key = $this->getPublicKey();
+            $data->key_type = $this->settings->getSetting( 'key_type' );   
         }
 
         return $data;
@@ -1141,7 +1161,6 @@ class JuniperAuthor extends JuniperBerry {
             } else if ( !empty( $_GET[ 'juniper_verify_package' ] ) ) {
                 $package = $_GET[ 'juniper_verify_package' ];
 
-                require_once( JUNIPER_AUTHOR_MAIN_DIR . '/vendor/autoload.php' );
 
                 $public_key = PublicKeyLoader::loadPublicKey( $this->settings->getSetting( 'public_key' ) );
                 $zip = new \ZipArchive();

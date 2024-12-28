@@ -1,6 +1,5 @@
 {
     "require": {
-        "phpseclib/phpseclib": "^3.0",
         "erusev/parsedown": "^1.7"
     },
     "config": {
