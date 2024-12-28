@@ -151,7 +151,7 @@ class JuniperAuthor extends JuniperBerry {
     // Since libsodium doesn't verify stored a hash of the password so we don't accidentally create garbage signatures 
     protected function testPrivateKey( $passPhrase ) {
         $hashed_password = $this->settings->getSetting( 'hashed_password' );
-        
+
         return sodium_crypto_pwhash_str_verify( $hashed_password, $passPhrase );
     }
 
@@ -767,6 +767,38 @@ class JuniperAuthor extends JuniperBerry {
         return $public_key;   
     }
 
+    public function outputPrivateKey( $data ) {
+        $data = new \stdClass;
+
+        $data->error = 1;
+        if ( isset( $_POST[ 'pw' ] ) ) {
+            $hashedPassword = $this->settings->getSetting( 'hashed_password' );
+            if ( sodium_crypto_pwhash_str_verify( $hashedPassword, $_POST[ 'pw' ] ) ) {
+                // password is legit
+                $passwordSalt = sodium_base642bin( $this->settings->getSetting( 'password_salt' ), SODIUM_BASE64_VARIANT_ORIGINAL );
+
+                $hash = sodium_crypto_pwhash(
+                    SODIUM_CRYPTO_SIGN_SEEDBYTES, 
+                    $_POST[ 'pw' ], 
+                    $passwordSalt, 
+                    SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, 
+                    SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE 
+                );
+
+                $key_pair = sodium_crypto_sign_seed_keypair( $hash );
+
+                if ( $key_pair ) {
+                    $data->error = 0;
+                    $data->private_key = sodium_bin2base64( sodium_crypto_sign_secretkey( $key_pair ), SODIUM_BASE64_VARIANT_ORIGINAL );
+
+                    return $data;
+                }  
+            }
+        }
+
+        return $data;
+    }
+
     public function outputPublicKey( $data ) {
         $data = new \stdClass;
         $data->public_key = '';
@@ -921,6 +953,14 @@ class JuniperAuthor extends JuniperBerry {
             array(
                 'methods' => 'GET',
                 'callback' => array( $this, 'outputPublicKey' ),
+            ) 
+        );
+
+        register_rest_route( 
+            'juniper/v1', '/private_key/', 
+            array(
+                'methods' => 'POST',
+                'callback' => array( $this, 'outputPrivateKey' ),
             ) 
         );
 
