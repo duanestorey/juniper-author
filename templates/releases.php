@@ -42,12 +42,12 @@
                 <thead>
                     <tr>
                         <th class="col1"><?php _e( 'Tag', 'juniper' ); ?></th>
-                        <th class="col2"><?php _e( 'Release Info', 'juniper' ); ?></th>
+                        <th class=""><?php _e( 'Release Info', 'juniper' ); ?></th>
                         <th class="col1"><?php _e( 'Release Date', 'juniper' ); ?></th>
                         <th class="col1"><?php _e( 'Package', 'juniper' ); ?></th>          
-                        <th class="col1"><?php _e( 'Signed', 'juniper' ); ?></th>
+                        <th class="col1 center"><?php _e( 'Signed', 'juniper' ); ?></th>
                         <th class="col1"><?php _e( 'Signed Date', 'juniper' ); ?></th>
-                        <th class="col1"><?php _e( 'Actions', 'juniper' ); ?></th>
+                        <th class="col1 center"><?php _e( 'Actions', 'juniper' ); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,13 +60,18 @@
                         <td class="package"><?php echo esc_html( basename( $actualRelease->downloadUrl ) ); ?></td>
                        
                         <?php if ( $actualRelease->signed ) { ?>
-                            <td class="yesno"><span class="green"><?php _e( 'Yes', 'juniper' ); ?></span></td>
-                            <td><?php echo date( 'M jS, Y', $actualRelease->signedDate ); ?></td>
-                            <td> <a class="verify" href="#" data-package="<?php echo esc_attr(  $repoInfo->repository->fullName . '/' . $actualRelease->tag . '/' . basename( $actualRelease->downloadUrl ) ); ?>"><?php _e( 'Verify', 'juniper' ); ?></td>
+                            <td class="yesno center"><span class="green"><?php _e( 'Yes', 'juniper' ); ?></span></td>
+                            <td class=""><?php echo date( 'M jS, Y', $actualRelease->signedDate ); ?></td>
+                            <td class="center">
+                                <a class="verify" href="#" data-package="<?php echo esc_attr(  $repoInfo->repository->fullName . '/' . $actualRelease->tag . '/' . basename( $actualRelease->downloadUrl ) ); ?>"><?php _e( 'Verify', 'juniper' ); ?></a> | 
+                                <a href="<?php esc_attr_e( $actualRelease->url ); ?>" target="_blank"><?php _e( 'View', 'juniper' ); ?></a>
+                            </td>
                         <?php } else { ?>
-                            <td class="yesno"><span class="red"><?php _e( 'No', 'juniper' ); ?></span></td>
+                            <td class="yesno center"><span class="red"><?php _e( 'No', 'juniper' ); ?></span></td>
                             <td></td>
-                            <td></td>
+                            <td class="center">
+                                <a href="<?php esc_attr_e( $actualRelease->url ); ?>" target="_blank"><?php _e( 'View', 'juniper' ); ?></a>
+                            </td>
                         <?php } ?>
                     </tr>
                 <?php } ?>

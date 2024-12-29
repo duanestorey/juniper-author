@@ -27,6 +27,9 @@
 .juniper .repo-table {
   width: 100%;
 }
+.juniper .repo-table th.center, .juniper .repo-table td.center {
+  text-align: center;
+}
 .juniper .text input, .juniper .readonlytext input {
   width: 50%;
 }
@@ -55,11 +58,11 @@
 }
 
 .col1 {
-  width: 10%;
+  width: 12%;
 }
 
 .col2 {
-  width: 20%;
+  width: 15%;
 }
 
 .issues table {

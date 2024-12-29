@@ -40,6 +40,10 @@
                 
             }
         }
+
+        th.center, td.center {
+            text-align: center;
+        }
     }
 
      .text, .readonlytext {
@@ -84,11 +88,11 @@
 }
 
 .col1 {
-    width: 10%;
+    width: 12%;
 }
 
 .col2 {
-    width: 20%;
+    width: 15%;
 }
 
 .issues {
