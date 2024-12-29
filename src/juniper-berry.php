@@ -38,7 +38,7 @@ class JuniperBerry {
             add_action( 'admin_init', array( $this, 'checkForUpdate' ) );
             add_filter( 'plugins_api', [ $this, 'handlePluginInfo' ], 20, 3 );
             add_filter( 'site_transient_update_plugins', array( $this, 'handleUpdate' ) );
-            add_action( 'upgrader_process_complete', array( $this, 'clearUpdateResult' ) );
+            add_action( 'upgrader_process_complete', array( $this, 'clearUpdateResult' ), 10, 2 );
           //  add_filter( 'plugin_action_links_' . $this->pluginSlug, [ $this, 'addActionLinks' ] );
         }
     }
