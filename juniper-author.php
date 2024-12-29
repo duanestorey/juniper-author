@@ -16,7 +16,7 @@
     Primary Branch: main
     GitHub Plugin URI: duanestorey/juniper-author
     Stable: 1.2.6
-    Authority: http://juniper.local
+    Authority: https://plugins.duanestorey.com
     Public Key: qs1A+S4pAYEVCBrPFN7cztRXpEBOD886zLLVxlHeY+w=
 
     Copyright (C) 2024-2025 by Duane Storey - All Rights Reserved
