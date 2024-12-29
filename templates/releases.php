@@ -20,7 +20,7 @@
                 <?php _e( 'Enter password to use private key', 'juniper' ); ?></label>
                 <input type="password" name="juniper_private_pw_1" id="juniper_private_pw_1" />  <label for="juniper_private_pw_1">
                 <a href="#" class="button button-primary digitally-sign" data-type="new"><?php _e( 'Sign New', 'juniper' ); ?></a>
-                <a href="#" class="button button-primary digitally-sign" data-type="all"><?php _e( 'Sign All', 'juniper' ); ?></a>
+                <a href="#" class="button button-primary digitally-sign" data-type="all"><?php _e( 'Sign/Resign All', 'juniper' ); ?></a>
             </div>
         </form>   
 
@@ -41,9 +41,10 @@
                     <tr>
                         <th class="col1"><?php _e( 'Tag', 'juniper' ); ?></th>
                         <th class="col2"><?php _e( 'Release Info', 'juniper' ); ?></th>
-                        <th class="col2"><?php _e( 'Package', 'juniper' ); ?></th>
-                        <th><?php _e( 'Release Date', 'juniper' ); ?></th>
+                        <th class="col1"><?php _e( 'Release Date', 'juniper' ); ?></th>
+                        <th class="col1"><?php _e( 'Package', 'juniper' ); ?></th>          
                         <th class="col1"><?php _e( 'Signed', 'juniper' ); ?></th>
+                        <th class="col1"><?php _e( 'Signed Date', 'juniper' ); ?></th>
                         <th class="col1"><?php _e( 'Actions', 'juniper' ); ?></th>
                     </tr>
                 </thead>
@@ -53,20 +54,18 @@
                     <tr class="one-release<?php if ( $actualRelease->signed ) echo ' signed'; else echo ' unsigned'; ?>" data-repo="<?php esc_attr_e( $repoInfo->repository->fullName  ); ?>" data-tag="<?php esc_attr_e( $actualRelease->tag ); ?>">
                         <td><?php echo esc_html( $actualRelease->tag ); ?></td>
                         <td><a href="<?php esc_attr_e( $actualRelease->url ); ?>" target="_blank"><?php echo esc_html( $actualRelease->name ); ?></a></td>
-                        
-                        <?php if ( $actualRelease->signed ) { ?>
-                        <td class="package"><?php echo esc_html( basename( $actualRelease->signedName ) ); ?></td>
-                        <?php } else { ?>
-                        <td class="package"><?php echo esc_html( basename( $actualRelease->downloadUrl ) ); ?></td>
-                        <?php } ?>
                         <td><?php echo date( 'M jS, Y', $actualRelease->publishedAt ); ?></td>
+                        <td class="package"><?php echo esc_html( basename( $actualRelease->downloadUrl ) ); ?></td>
+                       
                         <?php if ( $actualRelease->signed ) { ?>
                             <td class="yesno"><span class="green"><?php _e( 'Yes', 'juniper' ); ?></span></td>
-                            <td> <a class="verify" href="#" data-package="<?php echo esc_attr( $actualRelease->signedName ); ?>"><?php _e( 'Verify', 'juniper' ); ?></td>
+                            <td><?php echo date( 'M jS, Y', $actualRelease->signedDate ); ?></td>
+                            <td> <a class="verify" href="#" data-package="<?php echo esc_attr(  $repoInfo->repository->fullName . '/' . $actualRelease->tag . '/' . basename( $actualRelease->downloadUrl ) ); ?>"><?php _e( 'Verify', 'juniper' ); ?></td>
                         <?php } else { ?>
                             <td class="yesno"><span class="red"><?php _e( 'No', 'juniper' ); ?></span></td>
+                            <td></td>
+                            <td></td>
                         <?php } ?>
-                        <td></td>
                     </tr>
                 <?php } ?>
                 </tbody>

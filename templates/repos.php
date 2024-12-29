@@ -19,7 +19,6 @@
                 <th class="center"><?php _e( 'Authority', 'juniper' ); ?></th>
                 <th class="desc"><?php _e( 'Description', 'juniper' ); ?></th>
                 <th class="center"><?php _e( 'Latest', 'juniper' ); ?></th>
-                <th class="center"><?php _e( 'Tested', 'juniper' ); ?></th>
                 <th class="center"><?php _e( 'Issues', 'juniper' ); ?></th>
                
                 <th class="center"><?php _e( 'Actions', 'juniper' ); ?></th>
@@ -50,7 +49,6 @@
                     <?php } ?>
                 </td>
                 <td class="center"><?php echo esc_html( $data->info->stableVersion ); ?></td>
-                <td class="center"><?php echo esc_html( $data->info->testedUpTo ); ?></td>
                 <td class="center"><?php echo esc_html( count( $data->issues ) ); ?></td>
                 <td class="center"><a href="#" class="remove-repo" data-repo="<?php esc_attr_e( $data->repository->fullName ); ?>"><?php _e( 'Remove', 'juniper' ); ?></a</td>
             </tr>

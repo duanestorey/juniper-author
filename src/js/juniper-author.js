@@ -100,8 +100,9 @@ function juniperBegin() {
                 
                 if ( button.attr( 'data-type' ) == 'new' ) {
                     allReleases = jQuery( 'tr.one-release.unsigned' );
-                } else if ( button.attr( 'data-type' == 'all' ) ) {
+                } else if ( button.attr( 'data-type' ) == 'all' ) { 
                     allReleases = jQuery( 'tr.one-release' );
+                    allReleases.find( '.yesno' ).html( '' );
                 }
 
                 var releaseCount = allReleases.size();

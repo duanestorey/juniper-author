@@ -311,8 +311,12 @@ class Settings {
         return $setting;
     }
 
-    public function getSetting( $name ) {
-        return $this->settings->$name;
+    public function getSetting( $name, $default = false ) {
+        if ( isset( $this->settings ) && isset( $this->settings->$name ) ) {
+            return $this->settings->$name;
+        } 
+
+        return $default;
     }
 
     public function setSetting( $name, $value ) {

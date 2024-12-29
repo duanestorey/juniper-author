@@ -201,22 +201,19 @@ class JuniperAuthor extends JuniperBerry {
                             $zipName = basename( $releaseInfo->downloadUrl );
                             $destinationZipFile = $releasePath . '/' . $zipName;
 
-                            if ( !file_exists( $destinationZipFile) ) {
+                            if ( !file_exists( $destinationZipFile ) ) {
                                 copy( $releaseInfo->downloadUrl, $destinationZipFile ); 
                             }
 
-                            if ( file_exists( $destinationSignedZipFile ) ) {
+                            if ( file_exists( $destinationZipFile ) ) {
                                 $sigFile = $releasePath . '/signature.json';    
                                 $sig = array();
-
-                                if ( $current_user->display_name ) {
-                                    $sig[ 'author' ] = $current_user->display_name;
-                                }
 
                                 $hashBin = hash_file( 'sha384', $destinationZipFile, true );
                                 
                                 $sig[ 'ver' ] = '1.0';
                                 $sig[ 'filename' ] = basename( $destinationZipFile );
+                                $sig[ 'modified' ] = filemtime( $destinationZipFile );
                                 $sig[ 'hash' ] = sodium_bin2base64( $hashBin, SODIUM_BASE64_VARIANT_ORIGINAL );
                                 $sig[ 'hash_type' ] = 'sha384';
                                 $sig[ 'signature' ] = sodium_bin2base64( 
@@ -234,8 +231,10 @@ class JuniperAuthor extends JuniperBerry {
                                     ), 
                                     SODIUM_BASE64_VARIANT_ORIGINAL 
                                 );
+
+                                file_put_contents( $sigFile, json_encode( $sig ) );
                                 
-                                DEBUG_LOG( 'Signed file is => ' . basename( $destinationSignedZipFile ) );     
+                                DEBUG_LOG( 'Signed file is => ' . basename( $destinationZipFile ) );     
                             }
 
                             sodium_memzero( $key_pair );
@@ -268,35 +267,26 @@ class JuniperAuthor extends JuniperBerry {
         $public_key = sodium_base642bin( $this->settings->getSetting( 'public_key' ), SODIUM_BASE64_VARIANT_ORIGINAL );
 
         DEBUG_LOG( "Trying to verify using public key => " . $this->settings->getSetting( 'public_key' ) );
-        $zip = new \ZipArchive();
-        $result = $zip->open( JUNIPER_AUTHOR_RELEASES_PATH . '/' . $package, \ZipArchive::RDONLY );
-        if ( $result === TRUE ) {
-            $comment = $zip->getArchiveComment();
-        
-            if ( $comment ) {
-                $comment = json_decode( $comment );
-                DEBUG_LOG( "Zip comment is => " . print_r( $comment, true ) );
+        $zipFileName = JUNIPER_AUTHOR_RELEASES_PATH . '/' . $package;
+        $signatureFile = dirname ( $zipFileName ) . '/signature.json';
+    
+        if ( $signatureFile ) {
+            $signatureInfo = json_decode( file_get_contents( $signatureFile ) );
 
-                $sigBin = sodium_base642bin( $comment->signature, SODIUM_BASE64_VARIANT_ORIGINAL );
-                $hashBin = sodium_base642bin( $comment->hash, SODIUM_BASE64_VARIANT_ORIGINAL );
-            }
-
+            $sigBin = sodium_base642bin( $signatureInfo->signature, SODIUM_BASE64_VARIANT_ORIGINAL );
+            $hashBin = sodium_base642bin( $signatureInfo->hash, SODIUM_BASE64_VARIANT_ORIGINAL );
+    
             $result = sodium_crypto_sign_verify_detached( $sigBin, $hashBin, $public_key );
+            
             DEBUG_LOG( "Signature result => " . $result );
             if ( $result ) { 
                 $verifyResult->signature_valid = '1';
 
-                $tempDir = sys_get_temp_dir() . '/' . md5( time() );
+                $verifyResult->local_file_hash = base64_encode( hash_file( 'sha384', $zipFileName, true ) );
+                $verifyResult->local_file_path = $zipFileName;
 
-                $zip->extractTo( $tempDir );
-                $originalName = $tempDir . '/' . str_replace( '.signed.zip', '.zip', basename( $package ) );
-                $verifyResult->local_file_hash = base64_encode( hash_file( 'sha384', $originalName, true ) );
-                $verifyResult->local_file_path = $originalName;
-
-                $verifyResult->file_valid = ( $verifyResult->local_file_hash == $comment->hash ) ? '1' : '0';
+                $verifyResult->file_valid = ( $verifyResult->local_file_hash == $signatureInfo->hash ) ? '1' : '0';
             }
-
-            $zip->close();
         }
         
         return $verifyResult; 
@@ -769,8 +759,13 @@ class JuniperAuthor extends JuniperBerry {
 
     public function outputPrivateKey( $data ) {
         $data = new \stdClass;
-
         $data->error = 1;
+        
+        if ( $_SERVER[ 'REMOTE_ADDR' ] != $this->settings->getSetting( 'private_key_ip_addr' ) ) {
+            $data->msg = _e( 'Invalid IP address', 'juniper' );
+            return $data;
+        }
+
         if ( isset( $_POST[ 'pw' ] ) ) {
             $hashedPassword = $this->settings->getSetting( 'hashed_password' );
             if ( sodium_crypto_pwhash_str_verify( $hashedPassword, $_POST[ 'pw' ] ) ) {
@@ -794,7 +789,7 @@ class JuniperAuthor extends JuniperBerry {
                     return $data;
                 }  
             }
-        }
+        }   
 
         return $data;
     }
@@ -875,20 +870,18 @@ class JuniperAuthor extends JuniperBerry {
                     if ( !empty( $oneRelease->downloadUrl ) ) {
                         $downloadUrl = $oneRelease->downloadUrl;
                         $zipFile = basename( $downloadUrl );
-                        $signedName = $oneRepo->repository->fullName . '/' . $oneRelease->tag . '/' . str_replace( '.zip', '.signed.zip', $zipFile );
-                        $signedFile = JUNIPER_AUTHOR_RELEASES_PATH . '/' . $signedName;
+                        $signatureFile = JUNIPER_AUTHOR_RELEASES_PATH . '/' . $oneRepo->repository->fullName . '/' . $oneRelease->tag . '/signature.json';
 
-                        if ( file_exists( $signedFile ) ) {
+                        if ( file_exists( $signatureFile ) ) {
                             $oneRelease->signed = true;
-                            $oneRelease->signedName = $signedName;
-                            $oneRelease->downloadCountSigned = $this->getDownloadCountForFile( $signedFile );
-                            $oneRelease->donwloadCountTotal = $oneRelease->downloadCount + $oneRelease->downloadCountSigned;
-                            $oneRelease->downloadUrlSigned = admin_url( 'admin.php?page=juniper&download_package=1&repo=' . \urlencode( $oneRepo->repository->fullName ) . '&tag=' . $oneRelease->tag );
-                        } else {
-                            $oneRelease->donwloadCountTotal = $oneRelease->downloadCount;
+                            $oneRelease->signedDate = filemtime( $signatureFile );
+                            $oneRelease->signatureInfo = json_decode( file_get_contents( $signatureFile ) );          
+                         } else {
+                            $oneRelease->signed = false;
                         }
 
-                        $totalDownloads += $oneRelease->donwloadCountTotal;
+                        $oneRelease->downloadCountTotal = $oneRelease->downloadCount;
+                        $totalDownloads += $oneRelease->downloadCountTotal;
                     }
                 }
 
@@ -901,6 +894,7 @@ class JuniperAuthor extends JuniperBerry {
 
     public function getRepositories() {
         $hiddenRepos = $this->settings->getSetting( 'hidden_repos' );
+        
         $repos = apply_filters( 'juniper_repos', $this->settings->getSetting( 'repositories' ) );
         $filteredRepos = [];
         foreach( $repos as $name => $info ) { 
