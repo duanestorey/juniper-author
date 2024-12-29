@@ -50,7 +50,8 @@ class Settings {
                 array(
                         $this->addSetting( 'key_date', 'key_date', __( 'Key Creation Date', 'juniper' ) ),
                         $this->addSetting( 'textarea', 'public_key', __( 'Public Key', 'juniper' ) ),
-                        $this->addSetting( 'text', 'password_salt', __( 'Password Salt', 'juniper' ) ),
+                        $this->addSetting( 'readonlytext', 'password_salt', __( 'Password Salt', 'juniper' ) ),
+                        $this->addSetting( 'backup_keys', 'backup_keys', __( 'Create a backup of your signing-keys', 'juniper' ) ),
                         $this->addSetting( 'checkbox', 'reset_key', __( 'Delete keys (this is destructive, for testing only)', 'juniper' ) ),
                 )
             );
@@ -327,6 +328,10 @@ class Settings {
     public function renderOneSetting( $setting ) {
         echo '<div class="setting ' . $setting->type . '">';
         switch( $setting->type ) {
+            case 'backup_keys':
+                echo '<a class="button button-primary" href="' . admin_url( 'admin.php?page=juniper-options&backup_keys=1&nonce=' . wp_create_nonce( 'juniper' ) ) . '">' . __( 'Backup Key Data', 'juniper' ) . '</a>';
+                echo ' <label>' .  esc_html( $setting->desc );
+                break;
             case 'headers':
                 $publicKey = $this->getSetting( 'public_key' );
                 echo '<textarea rows="3" readonly>';
@@ -380,6 +385,11 @@ class Settings {
                 echo '<input type="text" name="wpsetting_' . esc_attr( $setting->name ) . '" value="' . esc_attr( $currentSetting ) . '" />';
                 echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '">' . esc_html( $setting->desc ) . '</label><br/>';
                 break;
+            case 'readonlytext':
+                $currentSetting = $this->getSetting( $setting->name );
+                echo '<input type="text" name="wpsetting_' . esc_attr( $setting->name ) . '" value="' . esc_attr( $currentSetting ) . '" readonly>';
+                echo '<label for="wpsetting_' . esc_attr( $setting->name ) . '">' . esc_html( $setting->desc ) . '</label><br/>';
+                break;    
             case 'select':
                 echo '<select name="wpsetting_'. esc_attr( $setting->name ) . '">';
                 $currentSetting = $this->getSetting( $setting->name );

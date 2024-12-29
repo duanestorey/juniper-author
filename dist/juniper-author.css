@@ -30,10 +30,10 @@
 .juniper .repo-table thead th {
   text-align: left;
 }
-.juniper .text input {
+.juniper .text input, .juniper .readonlytext input {
   width: 50%;
 }
-.juniper .text label {
+.juniper .text label, .juniper .readonlytext label {
   padding-left: 10px;
 }
 .juniper .setting {

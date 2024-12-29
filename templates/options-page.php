@@ -38,9 +38,9 @@
                     <tr>
                         <th><?php _e( 'Private Key Generation', 'juniper' ); ?></th>
                         <td>
-                            <p><?php _e( 'Juniper requires a private cryptographic key to sign all releases. To create a private key pair, enter a password below and click generate. ', 'juniper' ); ?></p>
+                            <p><?php _e( 'Juniper requires a private cryptographic key to sign all releases. To create a private key pair, enter a password below and click generate.', 'juniper' ); ?></p>
                             
-                            <p><?php _e( 'This password will be required to sign all releases, and is never saved.', 'juniper' ); ?></p><br />
+                            <p><?php _e( 'This password will be required to sign all releases, and is never saved. You will not be able to change the password later, so choose a strong one.', 'juniper' ); ?></p><br />
    
                             <fieldset>
                                 <div class="one-setting">

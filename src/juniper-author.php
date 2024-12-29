@@ -127,7 +127,22 @@ class JuniperAuthor extends JuniperBerry {
     }
 
     public function checkForDownload() {
-        if ( isset( $_GET[ 'download_package' ] ) ) {
+        if ( isset( $_GET[ 'backup_keys' ] ) ) {
+            $nonce = $_GET[ 'nonce' ];
+            if ( wp_verify_nonce( $nonce, 'juniper' ) && current_user_can( 'manage_options' ) ) {
+                $data = array();
+                
+                $data[ 'public_key' ] = $this->settings->getSetting( 'public_key' );
+                $data[ 'pw' ] = $this->settings->getSetting( 'hashed_password' );
+                $data[ 'salt' ] = $this->settings->getSetting( 'password_salt' );
+
+                header( 'Content-Disposition: attachment; filename="key-backup-' . time() . '.json"' );
+                header( 'Content-type: application/json' );
+
+                echo json_encode( $data );
+                die;
+            }
+        } else if ( isset( $_GET[ 'download_package' ] ) ) {
             $tag = $_GET[ 'tag' ];
             $repo = $_GET[ 'repo' ];
 

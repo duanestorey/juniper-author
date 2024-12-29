@@ -22,8 +22,16 @@ function hideSigningForm() {
     jQuery( '.sign-form' ).css( 'display', 'none' );
 }
 
+function showSigningForm() {
+    jQuery( '.sign-form' ).css( 'display', 'block' );
+}
+
 function showProgressBar() {
     jQuery( '.progress' ).css( 'display', 'block' );
+}
+
+function hideProgressBar() {
+    jQuery( '.progress' ).css( 'display', 'none' );
 }
 
 function setProgressBarPercent( percent ) {
@@ -92,9 +100,6 @@ function juniperBegin() {
             if( !decodedResponse.key_valid ) {
                 alert( 'Unable to load private key - possible passphrase error' );
             } else {
-                setProgressBarPercent( 0 );
-                showProgressBar();
-                hideSigningForm();
 
                 var allReleases;
                 
@@ -108,6 +113,10 @@ function juniperBegin() {
                 var releaseCount = allReleases.size();
                 var currentItem = 0;
                 if ( releaseCount ) {
+                    setProgressBarPercent( 0 );
+                    showProgressBar();
+                    hideSigningForm();
+
                     allReleases.each( function() {
                         var thisItem = jQuery( this );
 
@@ -125,11 +134,20 @@ function juniperBegin() {
                             thisItem.find( 'td.yesno' ).html( '<span class="green">' + decodedResponse.signed_text + '</span>' );
                             thisItem.find( 'td.package' ).html( decodedResponse.package );
                             setProgressBarPercent( currentItem * 100 / ( releaseCount ) );
+
+                            if ( currentItem ==  releaseCount ) {
+                                setTimeout( 
+                                    function() {
+                                        hideProgressBar();
+                                        setProgressBarPercent( 0 );
+                                        showSigningForm();
+                                    },
+                                    1000
+                                );
+                            }
                         });
                     });
                 }
-
-                setProgressBarPercent( 100 );
             }
         });
     });

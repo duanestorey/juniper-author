@@ -62,6 +62,10 @@ class WordPress {
             if ( empty( $repoInfo->stableVersion ) ) {
                 $repoInfo->stableVersion = $repoInfo->version;
             }
+
+            if  ( isset( $headers[ 'public key' ] ) ) {
+                $repoInfo->publicKeys = array_map( function( $e ) { return trim( $e ); }, explode( ',', $headers[ 'public key' ] ) );
+            }
         }
 
         return $repoInfo;  

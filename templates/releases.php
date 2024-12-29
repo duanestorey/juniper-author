@@ -24,6 +24,8 @@
             </div>
         </form>   
 
+        <p><strong><?php _e( 'This feature is experimental and currently undergoing rapid development.', 'juniper' ); ?></strong></p>
+
         <div class="progress">
             <div class="bar">10%</div>
         </div> 
