@@ -17,10 +17,10 @@
                 <th><?php _e( 'Name', 'juniper' ); ?></th>
                 <th><?php _e( 'Type', 'juniper' ); ?></th>
                 <th class="center"><?php _e( 'Authority', 'juniper' ); ?></th>
+                <th class="center"><?php _e( 'Has Key', 'juniper' ); ?></th>
                 <th class="desc"><?php _e( 'Description', 'juniper' ); ?></th>
                 <th class="center"><?php _e( 'Latest', 'juniper' ); ?></th>
                 <th class="center"><?php _e( 'Issues', 'juniper' ); ?></th>
-               
                 <th class="center"><?php _e( 'Actions', 'juniper' ); ?></th>
             </tr>
         </thead>
@@ -34,6 +34,13 @@
                 <td><?php echo esc_html( ucfirst( $data->info->type ) ); ?></td>
                 <td class="center">
                     <?php if ( $data->info->signingAuthority ) { ?>
+                    <?php _e( 'Yes', 'juniper' ); ?>
+                    <?php } else { ?>
+                    <span class=""><?php _e( 'No', 'juniper' ); ?></span>
+                    <?php } ?>
+                </td>
+                <td class="center">
+                    <?php if ( !empty( $data->info->publicKeys ) && $data->info->publicKeys ) { ?>
                     <?php _e( 'Yes', 'juniper' ); ?>
                     <?php } else { ?>
                     <span class=""><?php _e( 'No', 'juniper' ); ?></span>
