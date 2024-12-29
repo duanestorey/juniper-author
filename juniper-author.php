@@ -15,7 +15,7 @@
     Domain Path: /lang
     Primary Branch: main
     GitHub Plugin URI: duanestorey/juniper-author
-    Stable: 1.2.4
+    Stable: 1.2.5
     Authority: http://juniper.local
     Public Key: qs1A+S4pAYEVCBrPFN7cztRXpEBOD886zLLVxlHeY+w=
 
