@@ -31,6 +31,7 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+
 define( 'JUNIPER_AUTHOR_BANNER_WIDTH', 1200 );
 define( 'JUNIPER_AUTHOR_BANNER_HEIGHT', 800 );
 
